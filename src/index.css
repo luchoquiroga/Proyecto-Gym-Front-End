@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-gym-black text-gym-white font-sans antialiased selection:bg-gym-red-600 selection:text-white;
+    background-image: 
+      radial-gradient(at 100% 0%, rgba(220, 38, 38, 0.08) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgba(220, 38, 38, 0.05) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+
+  /* Custom styled scrollbars */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0e0e11;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #dc2626;
+  }
+}
