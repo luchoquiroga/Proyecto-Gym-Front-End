@@ -38,7 +38,7 @@ y son los que más deuda sacan.
 | 1 | **W1**: sacar los mocks de los `catch` + normalizar el error del backend | **hecho** (19/09), junto con W11 |
 | 2 | Los dos principals (`STACK.md` §5) + habilitar el área de GERENCIA | **hecho** (19/09), junto con W2, W3 y W4 |
 | 3 | Socios: crear / editar / inhabilitar | **hecho** (19/09) — W6, con `react-hook-form` + `zod` |
-| 4 | Listados paginados y búsqueda contra el servidor | pendiente |
+| 4 | Listados paginados y búsqueda contra el servidor | **hecho** (23/09) — sin `react-table`, con `useOrden` |
 | 5 | Cobrar, y portal del socio con los días restantes | **hecho** (22/09) — W5 y W10 |
 | 6 | Dashboard de ADMIN | pendiente |
 | 7 | Tests del interceptor y de los guards | **hecho** (23/09) — `pnpm test`, 31 tests |
@@ -76,9 +76,10 @@ y son los que más deuda sacan.
   19/09 para poder probar: el socio Charles Quiroga quedó **ACTIVO** con un pago
   de $35.000 (Pase Mensual, vence el 19/10/2026), y existe una cuenta de staff
   `gerencia` con rol GERENCIA. Son datos de una base descartable.
-- **Los listados todavía no mandan `sort`.** Ya está confirmado que el
-  backend lo acepta (`CONTRATO-API.md` §3, "Paginación", corregido el 23/09);
-  usarlo, por ejemplo por apellido en socios, es parte del paso 4.
+- **Pedido para el backend: `sort` con un campo inexistente devuelve 500.**
+  Debería ser un 400 con mensaje. No rompe nada en la web —el front solo manda
+  campos de una lista cerrada—, pero un 500 por un parámetro mal escrito
+  ensucia los logs y esconde errores de verdad.
 - Se borró `src/pages/Home.tsx`: era código muerto de un tema anterior (ninguna
   ruta lo usaba y usaba colores que ya no existen en `tailwind.config.js`).
 
@@ -110,6 +111,30 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-23 (sexto tramo)** — **Paso 4, ordenar los listados contra el
+  servidor.** Sin dependencias: **`@tanstack/react-table` se descartó**
+  (decisión del dueño; razones en `STACK.md` §2.2).
+  - `lib/useOrden.ts` guarda columna y dirección y arma el `sort` de Spring con
+    un **desempate por id** (sin él, dos filas iguales cambian de lugar entre
+    páginas y un socio puede aparecer en dos o en ninguna).
+    `components/ui/EncabezadoOrdenable.tsx` es el `<th>` clickeable, con
+    `aria-sort`.
+  - **Lista cerrada de columnas** por listado (`ORDENABLES_*` en cada
+    `api.ts`, que es donde vive lo que el backend acepta). Verificado contra el
+    backend: un campo inexistente da **500**, así que no se manda nada que no
+    esté en la lista.
+  - Socios arranca **por apellido** (antes salía en el orden de la base), y se
+    ordena por socio o documento. "Vence" y "Plan" no se ordenan porque se
+    calculan de los pagos; "Estado" tampoco, porque la base lo ordenaría
+    alfabético. En la búsqueda los encabezados no se ofrecen: `/buscar` no
+    acepta `sort`.
+  - Pagos se ordena por socio (`cliente.apellido`, anidado: verificado), fecha
+    o monto, y arranca por fecha descendente. Cuentas, por usuario, rol o
+    estado, y arranca con las activas primero.
+  - Cambiar el orden vuelve a la primera página.
+  - Verificado: `pnpm build`, `pnpm lint` y `pnpm test` (31) en verde; los
+    `sort` que arma cada listado se probaron contra el backend local.
 
 - **2026-09-23 (quinto tramo)** — **Paso 7, tests.** Dependencias nuevas, las
   de `STACK.md` §7 más una que faltaba en el comando: `vitest`,

@@ -2,12 +2,25 @@ import api from '../../api/axios';
 import type { PaginaResponse, ParametrosPagina } from '../../types/api';
 import type { PagoRequest, PagoResponse } from './types';
 
+/**
+ * Por qué se puede ordenar el listado, y a qué campos de la ENTIDAD `Pago`
+ * corresponde cada columna. Lista cerrada: un campo que no existe hace que el
+ * backend responda 500.
+ */
+export const ORDENABLES_PAGOS = {
+  socio: ['cliente.apellido', 'cliente.nombre'],
+  fecha: ['fechaPago'],
+  monto: ['montoAbonado'],
+} as const;
+
+export type ColumnaPago = keyof typeof ORDENABLES_PAGOS;
+
 export interface PagosQuery extends ParametrosPagina {
   /** Fechas ISO (2026-09-01), inclusive. Filtran por `fechaPago`. */
   desde?: string;
   hasta?: string;
   /** Formato de Spring: `['fechaPago,desc', 'id,desc']`. Campos de la ENTIDAD. */
-  sort?: string[];
+  sort?: readonly string[];
 }
 
 /**

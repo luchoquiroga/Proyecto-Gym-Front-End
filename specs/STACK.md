@@ -66,7 +66,16 @@ devolvió el servidor. La validación del cliente es **comodidad, nunca
 seguridad**: la fuente de verdad es el backend y se asume que puede rechazar
 algo que el front dio por bueno.
 
-### 2.2 `@tanstack/react-table` — listados
+### 2.2 `@tanstack/react-table` — listados — DESCARTADO el 2026-09-23
+
+> **Se decidió no usarla** al llegar al paso 4 (decisión del dueño). Con todo
+> del lado del servidor (paginación, orden y búsqueda), react-table en modo
+> manual no pagina, no ordena ni filtra: solo guardaría qué columna ordena y en
+> qué dirección. Eso lo hace `src/lib/useOrden.ts` en ~30 líneas, sin sumar una
+> API nueva (`columnHelper`, `flexRender`) a tablas que hoy se leen de corrido.
+> El razonamiento de abajo —**no ordenar ni filtrar en memoria**— sigue
+> vigente y es lo que implementa `useOrden`. Se deja el texto original.
+
 
 Socios y pagos son listas largas. **El backend ya pagina, ordena y busca del
 lado servidor** (Fase 3: `/clientes` paginado, `/clientes/buscar`, `/pagos` con
@@ -133,6 +142,7 @@ Notas de la instalación (paso 7, 2026-09-23):
 | Next.js | No hay SEO ni SSR: todo está detrás de login. Y complicaría el shell de escritorio, que quiere una SPA estática servida por URL |
 | Redux / Redux Toolkit | El estado de servidor lo tiene react-query y el de sesión zustand. No queda estado global que justifique el boilerplate |
 | MUI / Chakra | Traen su propio sistema de tema y pelean con el Tailwind que ya está |
+| `@tanstack/react-table` | Con paginación y orden del lado del servidor, solo guardaría la columna ordenada. Lo hace `lib/useOrden.ts` (§2.2, 2026-09-23) |
 | Cliente generado desde OpenAPI | El contrato es chico y quedó quieto después de las 8 fases. El costo del generador supera lo que ahorra |
 | `localStorage` para el access token | Decisión ya tomada y es correcta: token en RAM, sesión en cookie HttpOnly. **No se reabre** |
 
@@ -379,7 +389,7 @@ necesita, así el `package.json` siempre refleja algo que se usa:
 | 1 | **W1**: sacar los mocks de los `catch` + normalizar el error | ninguna |
 | 2 | Los dos principals (§5) + habilitar GERENCIA | ninguna |
 | 3 | Socios: crear / editar / inhabilitar | `react-hook-form` `zod` |
-| 4 | Listados paginados y búsqueda contra el servidor | `@tanstack/react-table` |
+| 4 | Listados paginados y búsqueda contra el servidor | ~~`@tanstack/react-table`~~ ninguna (§2.2) |
 | 5 | Cobrar, y portal del socio con los días restantes | `date-fns` |
 | 6 | Dashboard de ADMIN | `recharts` |
 | 7 | Tests del interceptor y de los guards | `vitest` `@testing-library/react` `msw` |
@@ -392,7 +402,6 @@ Comandos, cuando toque cada paso:
 
 ```bash
 pnpm add react-hook-form zod @hookform/resolvers
-pnpm add @tanstack/react-table
 pnpm add date-fns
 pnpm add recharts
 pnpm add -D vitest @testing-library/react @testing-library/dom @testing-library/jest-dom jsdom msw

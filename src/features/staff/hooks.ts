@@ -2,13 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { TAMANIO_PAGINA } from '../../types/api';
 import { cambiarActivoCuenta, crearCuenta, listarCuentas, resetearContrasenaCuenta } from './api';
 
-/** Activas primero, y las dadas de baja juntas al final, donde se reactivan. */
-const ORDEN = ['activo,desc', 'nombre,asc'];
-
-export const useCuentas = (pagina: number) =>
+export const useCuentas = (pagina: number, sort: readonly string[]) =>
   useQuery({
-    queryKey: ['staff', { page: pagina }],
-    queryFn: () => listarCuentas({ page: pagina, size: TAMANIO_PAGINA, sort: ORDEN }),
+    queryKey: ['staff', { page: pagina, sort }],
+    queryFn: () => listarCuentas({ page: pagina, size: TAMANIO_PAGINA, sort }),
   });
 
 /** El alta y la baja/reactivación cambian el listado; el reset de contraseña no. */

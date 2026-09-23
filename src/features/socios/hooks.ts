@@ -16,10 +16,10 @@ import type { SocioRequest } from './types';
  * cobrar o de dar de baja.
  */
 
-export const useSocios = (pagina: number, tamanio = TAMANIO_PAGINA) =>
+export const useSocios = (pagina: number, tamanio = TAMANIO_PAGINA, sort?: readonly string[]) =>
   useQuery({
-    queryKey: ['socios', { page: pagina, size: tamanio }],
-    queryFn: () => listarSocios({ page: pagina, size: tamanio }),
+    queryKey: ['socios', { page: pagina, size: tamanio, sort }],
+    queryFn: () => listarSocios({ page: pagina, size: tamanio, sort }),
   });
 
 export const useBuscarSocios = (nombre: string) => {

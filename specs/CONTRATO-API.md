@@ -321,8 +321,14 @@ servicios se lo pasan tal cual al repositorio (verificado el 23/09). Dos cosas:
   `planVigente`**: se calculan a partir de los pagos y no son columnas de
   `clientes`. En pagos, `fechaPago`, `fechaVencimiento` y `montoAbonado`.
 - Sin `sort`, el orden es el de la base (en la práctica, por id), que no está
-  garantizado. Qué responde un campo inexistente no está verificado: no lo
-  mandes a ciegas desde un input del usuario.
+  garantizado.
+- **Un campo inexistente responde 500** (verificado el 23/09), no 400. Por eso
+  el front solo manda campos de una lista cerrada por listado
+  (`ORDENABLES_*` en el `api.ts` de cada feature), nunca algo que venga de un
+  input o de la URL.
+- Las propiedades anidadas funcionan (`sort=cliente.apellido,asc` en pagos), y
+  el orden de texto no distingue mayúsculas.
+- `/clientes/buscar` **no** acepta `sort`: es una lista plana.
 
 ---
 

@@ -1,7 +1,14 @@
 import { KeyRound, RotateCcw, UserMinus } from 'lucide-react';
+import { Encabezado, EncabezadoOrdenable } from '../../../components/ui/EncabezadoOrdenable';
+import type { Direccion } from '../../../lib/useOrden';
+import type { ColumnaCuenta } from '../api';
 import type { CuentaStaff } from '../types';
 
-const COLUMNAS = ['Usuario', 'Rol', 'Estado', ''];
+const COLUMNAS_ORDENABLES: ReadonlyArray<[string, ColumnaCuenta]> = [
+  ['Usuario', 'usuario'],
+  ['Rol', 'rol'],
+  ['Estado', 'estado'],
+];
 
 interface TablaCuentasProps {
   cuentas: CuentaStaff[];
@@ -9,6 +16,8 @@ interface TablaCuentasProps {
   idPropio: number | null;
   onCambiarActivo: (cuenta: CuentaStaff) => void;
   onResetearContrasena: (cuenta: CuentaStaff) => void;
+  direccionDe: (columna: ColumnaCuenta) => Direccion | null;
+  onOrdenar: (columna: ColumnaCuenta) => void;
 }
 
 const claseAccion =
@@ -19,16 +28,22 @@ export const TablaCuentas = ({
   idPropio,
   onCambiarActivo,
   onResetearContrasena,
+  direccionDe,
+  onOrdenar,
 }: TablaCuentasProps) => (
   <div className="overflow-x-auto">
     <table className="w-full text-left text-sm">
       <thead>
         <tr className="border-b border-gym-border text-xs uppercase tracking-wider text-gym-muted bg-gym-dark/50">
-          {COLUMNAS.map((columna, i) => (
-            <th key={columna || i} className="py-4 px-6 font-semibold whitespace-nowrap">
-              {columna}
-            </th>
+          {COLUMNAS_ORDENABLES.map(([etiqueta, columna]) => (
+            <EncabezadoOrdenable
+              key={columna}
+              etiqueta={etiqueta}
+              direccion={direccionDe(columna)}
+              onOrdenar={() => onOrdenar(columna)}
+            />
           ))}
+          <Encabezado etiqueta="" />
         </tr>
       </thead>
       <tbody className="divide-y divide-gym-border/50">
