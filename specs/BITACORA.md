@@ -7,20 +7,23 @@ no coinciden, mandan ellos.
 
 Se actualiza **al terminar cada tramo**, no al final de todo.
 
-## Estado al 2026-09-19
+## Estado al 2026-09-23
 
-- **El backend está terminado** para el alcance definido: ocho fases de
-  replanteo cerradas, sin superficie de más, desplegado en Render desde `master`
+- **El backend está terminado** para el alcance definido: nueve fases
+  cerradas (la 9 fueron los pedidos del front, B1–B5), sin superficie de más, desplegado en Render desde `master`
   (migraciones V3–V7 ya corrieron). **No bloquea nada del front.**
 - **La web ya no miente ni le cierra la puerta a GERENCIA.** Las cuatro lecturas
   están contra el contrato vigente (paginación, `documento`, `fechaVencimiento`,
   estados reales), no hay un solo `catch` con datos inventados, y el staff entra
   por dos áreas: mostrador (GERENCIA) y administración (ADMIN).
-- **Ya hay escrituras**: alta, edición y baja de socios (W6). Lo que falta para
-  cubrir el mostrador es **cobrar** (W5).
+- **El mostrador está cubierto**: alta, edición y baja de socios (W6) y
+  **cobrar** (W5), las dos probadas a mano contra el backend.
 - **El stack quedó decidido** el 2026-09-18 (`STACK.md`): se conserva lo que ya
   existe y se agrega de a una pieza por ticket. Los pasos 1 y 2 no agregaron
   ninguna dependencia, como estaba previsto.
+- **El portal del socio se puede alcanzar** (W10): login por email, registro
+  con el código de activación y días restantes. Falta probarlo a mano de punta
+  a punta.
 - **El escritorio no empezó** y no debería empezar hasta que la web cubra lo que
   hoy hace la app Swing (o sea: hasta que GERENCIA pueda operar).
 
@@ -31,20 +34,35 @@ y son los que más deuda sacan.
 
 | Paso | Qué cierra | Estado |
 |---|---|---|
-| 0 | `git init` + commit de la maqueta tal cual está, y los repos creados | `git init` y `remote` hechos por el dueño el 19/09; **falta el primer commit** |
+| 0 | `git init` + commit de la maqueta tal cual está, y los repos creados | **hecho** (`489cdb9`) |
 | 1 | **W1**: sacar los mocks de los `catch` + normalizar el error del backend | **hecho** (19/09), junto con W11 |
 | 2 | Los dos principals (`STACK.md` §5) + habilitar el área de GERENCIA | **hecho** (19/09), junto con W2, W3 y W4 |
 | 3 | Socios: crear / editar / inhabilitar | **hecho** (19/09) — W6, con `react-hook-form` + `zod` |
 | 4 | Listados paginados y búsqueda contra el servidor | pendiente |
-| 5 | Cobrar, y portal del socio con los días restantes | pendiente |
+| 5 | Cobrar, y portal del socio con los días restantes | **hecho** (22/09) — W5 y W10 |
 | 6 | Dashboard de ADMIN | pendiente |
 | 7 | Tests del interceptor y de los guards | pendiente |
 | 8 | Shell de escritorio (repo aparte) | pendiente |
 
-## Abierto al 2026-09-19
+## Abierto al 2026-09-23
 
-- **Falta el primer commit.** El repo tiene `git init` y `origin`, pero ningún
-  commit: hoy no hay a dónde volver si algo sale mal.
+- **Falta probar W10 a mano de punta a punta**: dar de alta un socio, activar
+  la cuenta con el código, entrar, F5 en el portal (silent refresh contra
+  `/clientes/refresh`) y que la sesión vencida mande a `/socio/ingresar`.
+- **Datos de prueba que quedaron en `gym_api_local`** (23/09): socios 4 a 7
+  (documentos `PRUEBA…`, `ESTADO…`, `CADENA…`, `CADMES…`). Los pagos #4, #5,
+  #8 y #10 están anulados. **#6 ($35.000), #7 ($1.000) y #9 ($35.000) siguen
+  válidos y suman al total de septiembre.**
+  Se dejan a propósito, por decisión del dueño. El socio 7 quedó INACTIVO por
+  el bug del estado al anular (ver el historial del 23/09, arreglado en el
+  backend en `de3a0d8`): el estado ya guardado no se corrige solo.
+- **Probar a mano W12 y W13** con la cuenta de admin: anular un pago (tiene
+  que quedar tachado y bajar el total del mes), intentar anular uno que tiene
+  otro encadenado después (tiene que mostrar el 400 que nombra al posterior),
+  y que el total de arriba coincida con el de la tarjeta del dashboard.
+- **Probar a mano la Fase 9 desde la web**: el cobro anticipado encadenado
+  (Charles vence el 19/10: un mes cobrado hoy tiene que vencer el 18/11, no el
+  23/10) y la tarjeta de socios activos, que cambia al dar de baja.
 - **Falta ver el área de GERENCIA con ojos.** El backend ya confirmó los
   permisos, pero nadie entró todavía a la web con esa cuenta: hay que mirar que
   la navegación no muestre Dashboard ni Pagos, y que entrar a `/staff/pagos` a
@@ -55,12 +73,9 @@ y son los que más deuda sacan.
   19/09 para poder probar: el socio Charles Quiroga quedó **ACTIVO** con un pago
   de $35.000 (Pase Mensual, vence el 19/10/2026), y existe una cuenta de staff
   `gerencia` con rol GERENCIA. Son datos de una base descartable.
-- **`sort` en los listados.** `TICKETS.md` W2 dice que los parámetros son
-  `?page=&size=&sort=nombre,asc`; `CONTRATO-API.md` §3 solo documenta `page` y
-  `size`. Por ahora **no se manda `sort`** y el orden es el que da el backend.
-  Verificar contra Swagger y corregir el documento que esté mal.
-- **La cantidad de socios activos sigue sin endpoint** (W9). La tarjeta no está,
-  y no se calcula en el navegador.
+- **Los listados todavía no mandan `sort`.** Ya está confirmado que el
+  backend lo acepta (`CONTRATO-API.md` §3, "Paginación", corregido el 23/09);
+  usarlo, por ejemplo por apellido en socios, es parte del paso 4.
 - Se borró `src/pages/Home.tsx`: era código muerto de un tema anterior (ninguna
   ruta lo usaba y usaba colores que ya no existen en `tailwind.config.js`).
 
@@ -92,6 +107,130 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-23 (segundo tramo)** — **W12 (anular) y W13 (desglose del mes)**,
+  juntos porque son la misma pantalla. Sin dependencias nuevas.
+  - **Pagos pasó a ser el desglose de un mes** con un selector ‹ mes ›. El mes
+    y la página viven en la URL (`/staff/pagos?anio=2026&mes=9&pagina=0`): la
+    tarjeta "Ingresos del mes" del dashboard linkea al mes que sumó el backend,
+    y un F5 no te devuelve al mes en curso.
+  - **El total de arriba y la tabla coinciden por construcción, no porque el
+    front los sume.** Los dos filtran por `fechaPago` del primer al último día
+    del mes (`rangoDelMes` en `lib/fechas`). El total sale de
+    `ganancias-mensuales` —el mismo número del dashboard— y excluye los
+    anulados; la tabla los muestra tachados. Sumar la tabla en el navegador
+    daría el total de 20 filas, no del mes.
+  - **Orden**: `sort=fechaPago,desc&sort=id,desc`. Axios por defecto manda los
+    arrays como `sort[]=…`, que Spring **ignora sin avisar**; se usa
+    `paramsSerializer: { indexes: null }` en `listarPagos` (verificado con
+    `axios.getUri`).
+  - **Anular** (`ConfirmarAnulacion`): botón en cada fila válida, motivo
+    obligatorio de hasta 300 caracteres, y dice claro que no se borra nada. El
+    400 del pago encadenado (Fase 9) aparece arriba del formulario tal cual,
+    porque ya nombra al pago que hay que anular primero. Invalida socios, pagos
+    y dashboard: anular puede devolver al socio a su vencimiento anterior.
+  - La tabla se sacó a `TablaPagos.tsx`. Componentes nuevos: `SelectorDeMes`,
+    `ResumenDelMes` y `components/ui/CampoAreaTexto`. `TarjetaKpi` acepta un
+    `enlace` opcional.
+  - Verificado: `pnpm build` y `pnpm lint` en verde. **Contra el backend local
+    por API, 22/22**, con las cuentas `admin` y `gerencia`: el total del mes
+    coincide con la suma de los pagos válidos del listado (antes y después de
+    cobrar y anular); `sort=` ordena y `sort[]=` se ignora; motivo vacío y de
+    301 caracteres dan 400 con `errores.motivo`; anular con uno encadenado da
+    el 400 que nombra al posterior; los anulados se siguen listando; GERENCIA
+    recibe 403 en `/pagos`, en la anulación y en `/dashboard/socios`. De ahí
+    salió un bug del backend: **anular un pago dejaba INACTIVO a un socio
+    cubierto por otro pago válido** (dentro de la transacción de `anular`, el
+    recálculo no veía el pago vigente y caía en `orElse(INACTIVO)`).
+    Reproducido con pases diarios y mensuales; **arreglado en el backend en
+    `de3a0d8`**. No se volvió a correr la prueba desde el front después del
+    arreglo.
+
+- **2026-09-23** — **Adaptar la web a la Fase 9 del backend**, que resolvió los
+  cinco pedidos B1–B5 (`api\specs\2026-09-23-fase9-pedidos-del-front.md`, §8
+  "Impacto en el front"). Sin dependencias nuevas.
+  - **Cobro encadenado (B2).** `preverCobro` copia la regla nueva: si el socio
+    todavía tiene días pagos, el período nuevo arranca cuando terminan. El
+    aviso de "se pierden N días" **se borró**, porque ya no pasa. Para un cobro
+    con **fecha pasada**, el aviso dice que el vencimiento lo va a mostrar el
+    comprobante: el backend encadena con lo que el socio tenía pago en esa
+    fecha, y eso sale de pagos que GERENCIA no puede leer. No se adivina.
+  - **Contraseña de 8 (B3)** en el `zod` del registro del socio. El login
+    **no** valida largo, a propósito: las cuentas viejas con contraseña corta
+    tienen que poder seguir entrando.
+  - **Tarjeta de socios activos (B5, cierra W9)**, leyendo
+    `GET /dashboard/socios`, con morosos e inactivos al pie. Cuelga de
+    `['dashboard', 'socios']`; por eso **el alta y la baja de socios ahora
+    también invalidan `['dashboard']`**: si no, el conteo quedaba viejo
+    después de dar de baja a alguien.
+  - B1 (zona horaria) y B4 (UTF-8) no necesitaron cambios acá. Con B1, el
+    "hoy" del navegador y el del backend coinciden en el gimnasio.
+  - El anulado con pago encadenado (400 nuevo) queda documentado para W12, que
+    todavía no tiene pantalla.
+  - `CONTRATO-API.md` quedó al día con la Fase 9.
+  - Verificado: `pnpm build` y `pnpm lint` en verde.
+
+- **2026-09-22 (segundo tramo)** — Paso 5, segunda mitad: **W10, portal del
+  socio**. Sin dependencias nuevas (`date-fns` ya había entrado con W5).
+  - **Dos pantallas públicas nuevas**: `/socio/ingresar` (login por email
+    contra `/clientes/login`) y `/socio/registro` (canje del código de
+    activación). Son otra puerta, no una pestaña del login de staff: otro
+    identificador, otra cookie, otro refresh. Las dos logins se linkean entre
+    sí, y el registro, al terminar, manda al login con el email ya escrito
+    porque **el backend no inicia sesión al registrar**.
+  - **Cada área manda a su propio login.** `RutaProtegida` redirige según el
+    portal de la ruta (`RUTAS_LOGIN` en `auth/rutas.ts`), y la raíz sin sesión
+    va al login del último portal usado. Antes, un socio con la sesión vencida
+    caía en el login del staff.
+  - **El código de activación se normaliza** (mayúsculas, sin espacios ni
+    guiones) porque se dicta en persona y el backend lo busca exacto.
+  - **"Repetí la contraseña"** es solo del front; no se agregó un largo mínimo
+    que el backend no exige (quedó como tema para el backend).
+  - **Días restantes** (`portal-socio/components/DiasRestantes.tsx`): "te
+    quedan N días", "vence hoy" o "venció hace N días", en ámbar desde 5 días
+    antes. Si el socio está dado de baja **no se muestra cuenta regresiva**,
+    para no contradecir el estado.
+  - La tarjeta del login se sacó a `components/layout/PantallaAuth.tsx`, que
+    usan las tres pantallas sin sesión.
+  - Verificado: `pnpm build` y `pnpm lint` en verde. Contra el backend local,
+    con `curl`: el código inexistente (400 solo `mensaje`), el 400 de
+    validación del registro y del login (`errores` con los mismos nombres que
+    los campos del formulario), el 401 del login (`{mensaje}` sin `status`),
+    el refresh de socio sin cookie (401) y el preflight de CORS del registro.
+    **No se probó el camino feliz**: hace falta un código nuevo, y eso sale de
+    un alta con cuenta de staff.
+
+- **2026-09-22** — Paso 5, primera mitad: **W5, cobrar**. Dependencia nueva:
+  `date-fns`, la que `STACK.md` §7 tenía prevista para este paso, y por la
+  razón de §2.3 (restar fechas ISO sin el off-by-one de UTC-3).
+  - **Antes de escribir se leyó el backend** y salieron tres cosas que el
+    ticket no decía o decía mal: el retroactivo vencido es **201, no 400**
+    (corregido en `TICKETS.md` W5); el período nuevo **no se encadena** con el
+    vigente; y el vencimiento del socio es el **máximo** entre sus pagos. Las
+    tres quedaron en `CONTRATO-API.md` §3, Pagos.
+  - **El botón "Cobrar" está en cada fila del listado de socios**, para ADMIN
+    y GERENCIA, y también sobre un inactivo (es como vuelve). No está en la
+    pantalla de pagos porque GERENCIA no puede leer ningún pago.
+  - **El formulario** (`features/pagos/components/FormularioCobro.tsx`)
+    precarga el plan vigente del socio y el precio del plan elegido; al
+    cambiar de plan, el importe pasa a su precio. `zod` avisa el pago parcial
+    antes de viajar, pero el que decide es el 400 del backend, que se muestra
+    tal cual.
+  - **Antes de confirmar, dice qué va a pasar** (`preverCobro` en
+    `pagos/schemas.ts`, con las mismas reglas del backend): hasta cuándo queda
+    al día, cuántos días que ya había pagado se superponen, si el
+    vencimiento no cambia, o si el período ya terminó y no lo activa.
+  - **Después de cobrar, el comprobante se arma con la respuesta**, no con lo
+    tipeado. Si el pago no activa al socio, lo dice y avisa que no se vuelva a
+    cobrar.
+  - Invalida `['socios']`, `['pagos']` y `['dashboard']`, y espera a que se
+    refresquen antes de mostrar el comprobante: cuando se cierra, el listado ya
+    muestra el estado nuevo.
+  - Nuevo `components/ui/CampoSelect.tsx`, hermano de `CampoTexto`.
+  - Verificado: `pnpm build` y `pnpm lint` en verde. **Probado a mano por el
+    dueño contra el backend** el mismo día: el aviso de días superpuestos, la
+    reactivación de un inactivo, el pago parcial rechazado, el retroactivo
+    vencido y el cobro con la cuenta GERENCIA.
 
 - **2026-09-19 (segundo tramo)** — Paso 3: **W6, alta / edición / baja de
   socios**. Es la primera escritura de la web. Dependencias nuevas, las que

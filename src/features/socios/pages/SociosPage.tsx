@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil, Search, UserMinus, UserPlus, Users } from 'lucide-react';
+import { Banknote, Pencil, Search, UserMinus, UserPlus, Users } from 'lucide-react';
 import { EncabezadoPagina } from '../../../components/ui/EncabezadoPagina';
 import { Paginador } from '../../../components/ui/Paginador';
 import { Cargando, ErrorDeCarga, SinDatos } from '../../../components/estado/Estados';
@@ -11,6 +11,9 @@ import { AvisoCodigoActivacion } from '../components/AvisoCodigoActivacion';
 import { ConfirmarBaja } from '../components/ConfirmarBaja';
 import { useBuscarSocios, useSocios } from '../hooks';
 import type { Socio, SocioAltaResponse } from '../types';
+import { FormularioCobro } from '../../pagos/components/FormularioCobro';
+import { ComprobanteCobro } from '../../pagos/components/ComprobanteCobro';
+import type { PagoResponse } from '../../pagos/types';
 
 const COLUMNAS = ['Documento', 'Socio', 'Teléfono', 'Estado', 'Vence', 'Plan vigente', 'Acciones'];
 
@@ -24,6 +27,8 @@ export const SociosPage = () => {
   const [socioEnEdicion, setSocioEnEdicion] = useState<Socio | null>(null);
   const [altaReciente, setAltaReciente] = useState<SocioAltaResponse | null>(null);
   const [socioABajar, setSocioABajar] = useState<Socio | null>(null);
+  const [socioACobrar, setSocioACobrar] = useState<Socio | null>(null);
+  const [pagoRegistrado, setPagoRegistrado] = useState<PagoResponse | null>(null);
 
   // La búsqueda le pega al endpoint del backend. Filtrar en memoria filtraría
   // solo la página actual y parecería que busca entre todos los socios.
@@ -129,6 +134,16 @@ export const SociosPage = () => {
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center justify-end gap-1">
+                          {/* Se le cobra también a un inactivo: es como vuelve al gimnasio. */}
+                          <button
+                            onClick={() => setSocioACobrar(socio)}
+                            title="Registrar un pago"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gym-muted hover:text-emerald-400 hover:bg-emerald-600/10 transition-colors"
+                          >
+                            <Banknote className="w-3.5 h-3.5" />
+                            Cobrar
+                          </button>
+
                           <button
                             onClick={() => abrirEdicion(socio)}
                             title="Editar datos"
@@ -197,6 +212,21 @@ export const SociosPage = () => {
       )}
 
       {socioABajar && <ConfirmarBaja socio={socioABajar} onCerrar={() => setSocioABajar(null)} />}
+
+      {socioACobrar && (
+        <FormularioCobro
+          socio={socioACobrar}
+          onCerrar={() => setSocioACobrar(null)}
+          onCobrado={(pago) => {
+            setSocioACobrar(null);
+            setPagoRegistrado(pago);
+          }}
+        />
+      )}
+
+      {pagoRegistrado && (
+        <ComprobanteCobro pago={pagoRegistrado} onCerrar={() => setPagoRegistrado(null)} />
+      )}
     </div>
   );
 };

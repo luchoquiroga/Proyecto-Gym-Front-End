@@ -2,7 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthInitializer } from './auth/AuthInitializer';
 import { RutaProtegida } from './auth/RutaProtegida';
-import { rutaInicial } from './auth/rutas';
+import { RUTAS_LOGIN, rutaInicial } from './auth/rutas';
 import { useSesion } from './auth/sesion';
 import { StaffLayout } from './components/layout/StaffLayout';
 import { Login } from './pages/Login';
@@ -12,6 +12,8 @@ import { SociosPage } from './features/socios/pages/SociosPage';
 import { PlanesPage } from './features/planes/pages/PlanesPage';
 import { PagosPage } from './features/pagos/pages/PagosPage';
 import { PortalSocioPage } from './features/portal-socio/pages/PortalSocioPage';
+import { LoginSocioPage } from './features/portal-socio/pages/LoginSocioPage';
+import { RegistroSocioPage } from './features/portal-socio/pages/RegistroSocioPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,10 +27,11 @@ const queryClient = new QueryClient({
 });
 
 const RedireccionRaiz = () => {
-  const { principal, cargandoSesion } = useSesion();
+  const { principal, portal, cargandoSesion } = useSesion();
 
   if (cargandoSesion) return null;
-  if (!principal) return <Navigate to="/login" replace />;
+  // Sin sesión, a la puerta del último portal usado en este navegador.
+  if (!principal) return <Navigate to={RUTAS_LOGIN[portal]} replace />;
 
   return <Navigate to={rutaInicial(principal)} replace />;
 };
@@ -73,8 +76,10 @@ function App() {
               />
             </Route>
 
-            {/* Portal del socio. Todavía no hay login propio de socio (ticket W10):
-                la pantalla existe y lee datos reales, pero no se puede alcanzar. */}
+            {/* Portal del socio: login propio (por email, contra /clientes/login)
+                y registro con el código de activación que le dio el mostrador. */}
+            <Route path={RUTAS_LOGIN.socio} element={<LoginSocioPage />} />
+            <Route path="/socio/registro" element={<RegistroSocioPage />} />
             <Route
               path="/socio/resumen"
               element={

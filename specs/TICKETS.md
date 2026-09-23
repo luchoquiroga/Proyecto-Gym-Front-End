@@ -171,7 +171,7 @@ Conviene renombrar las rutas `/admin/*` a algo neutro (`/staff/*`): dejarlas
 como están hace que la mitad de las pantallas de GERENCIA vivan bajo una URL que
 dice "admin".
 
-### W5 — Cobrar sin ver la tabla de pagos
+### W5 — Cobrar sin ver la tabla de pagos — HECHO el 2026-09-22
 
 Es el ticket que desbloquea el reemplazo del escritorio, y **no es mover una
 pantalla de lugar**: hoy el cobro vive dentro de la pantalla de pagos, que
@@ -185,7 +185,9 @@ Dos errores del backend que la pantalla tiene que mostrar bien:
 - **400 por monto menor al precio del plan.** No hay pago parcial: se rechaza
   entero y no se registra nada. El mensaje viene en `mensaje` del `ErrorResponse`
   y hay que mostrarlo tal cual, no un "error al guardar" genérico.
-- **400 por pago retroactivo ya vencido**: se registra pero no activa al socio.
+- ~~**400 por pago retroactivo ya vencido**: se registra pero no activa al socio.~~
+  **Corregido el 2026-09-22:** no es un 400, es un **201**. El pago se registra
+  y el socio no se activa. Mostrarlo como error haría que se cobre dos veces.
 
 La respuesta **no** trae quién cobró (`registradoPor` no está en `PagoResponse`,
 a propósito), así que no intentes mostrarlo.
@@ -259,11 +261,12 @@ tenía antes ya no existe.
   el refresh siguiente va a fallar: conviene cerrar sesión y mandar al login con
   un mensaje claro, en vez de esperar a que el interceptor lo descubra solo.
 
-### W9 — Dashboard con los números que el backend da — PARCIAL (2026-09-19)
+### W9 — Dashboard con los números que el backend da — HECHO el 2026-09-23
 
 > Ya está hecho lo que no dependía del backend: el total sale de
 > `totalElementos` y la tarjeta de "socios activos" se sacó en vez de
-> calcularla mal. **Queda abierto** el endpoint que devuelva los activos.
+> calcularla mal. **Cerrado el 2026-09-23**: la Fase 9 del backend agregó
+> `GET /dashboard/socios` y la tarjeta volvió, con morosos e inactivos al pie.
 
 `/api/v1/dashboard/ganancias-mensuales` sigue existiendo y es solo ADMIN.
 
@@ -274,15 +277,15 @@ total sale de `totalElementos`; **los activos no salen de ningún endpoint
 existente**, así que o se agrega al dashboard del backend (ticket de backend) o
 la tarjeta se saca hasta que exista. No inventar el número en el front.
 
-### W10 — El portal del socio no se puede alcanzar — PARCIAL (2026-09-19)
+### W10 — El portal del socio no se puede alcanzar — HECHO el 2026-09-22
 
 > Hecho: el arreglo conceptual de los tipos (`Principal` como unión
 > discriminada, `RolStaff` sin `CLIENTE`), el refresh por portal —así que la
 > sesión de un socio ya se puede restaurar— y la pantalla, que dejó de estar
 > hardcodeada y lee `GET /clientes/{id}`.
-> **Falta**: el login de socio (`/clientes/login`), el registro con el código de
-> activación, y los días restantes hasta el vencimiento (necesita `date-fns`,
-> paso 5 del `STACK.md`).
+> **Completado el 2026-09-22**: login de socio en `/socio/ingresar`, registro
+> con el código de activación en `/socio/registro`, y los días restantes en el
+> portal (con `date-fns`).
 
 `ClientePortal` y la ruta `/cliente/resumen` existen, pero **no hay forma de
 loguearse como socio**: el front solo llama a `/api/v1/usuarios/login`, y
@@ -328,7 +331,7 @@ cuidar.
 
 ---
 
-### W12 — Anular un pago cargado por error (solo ADMIN)
+### W12 — Anular un pago cargado por error (solo ADMIN) — HECHO el 2026-09-23
 
 Depende de F6.1. **No es un botón "eliminar":** el pago no desaparece, queda
 marcado como anulado con quién, cuándo y por qué. La UI tiene que reflejar eso o
@@ -345,7 +348,7 @@ va a generar la expectativa equivocada.
   al pago anterior.
 - GERENCIA no ve esta acción (403 del backend si la intenta).
 
-### W13 — Desglose de ganancias del mes (solo ADMIN)
+### W13 — Desglose de ganancias del mes (solo ADMIN) — HECHO el 2026-09-23
 
 El dashboard hoy muestra el total agregado de `/dashboard/ganancias-mensuales`.
 El alcance pide poder **abrir ese número**: ver los pagos que lo componen.

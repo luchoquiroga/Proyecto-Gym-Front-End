@@ -44,13 +44,22 @@ export const useSocio = (id: number | null) =>
  * Las tres invalidan `['socios']` entero, no solo la página que tocaron: el
  * alta cambia el total del padrón, la edición cambia una fila que puede estar
  * en cualquier página y en la búsqueda, y la baja cambia el estado.
+ *
+ * El alta y la baja además invalidan `['dashboard']`, porque cambian el conteo
+ * de socios por estado. La edición no: no toca el estado.
  */
+
+const invalidarSociosYDashboard = (queryClient: ReturnType<typeof useQueryClient>) =>
+  Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['socios'] }),
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+  ]);
 
 export const useCrearSocio = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: crearSocio,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['socios'] }),
+    onSuccess: () => invalidarSociosYDashboard(queryClient),
   });
 };
 
@@ -66,6 +75,6 @@ export const useDarDeBajaSocio = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: darDeBajaSocio,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['socios'] }),
+    onSuccess: () => invalidarSociosYDashboard(queryClient),
   });
 };

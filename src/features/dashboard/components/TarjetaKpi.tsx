@@ -1,4 +1,5 @@
-import type { LucideIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowUpRight, type LucideIcon } from 'lucide-react';
 import { Esqueleto } from '../../../components/estado/Estados';
 import { mensajeDeError } from '../../../lib/errores';
 
@@ -9,6 +10,8 @@ interface TarjetaKpiProps {
   icono: LucideIcon;
   cargando?: boolean;
   error?: unknown;
+  /** Para abrir el número: a dónde lleva y con qué texto. */
+  enlace?: { a: string; texto: string };
 }
 
 /**
@@ -23,6 +26,7 @@ export const TarjetaKpi = ({
   icono: Icono,
   cargando,
   error,
+  enlace,
 }: TarjetaKpiProps) => (
   <div className="bg-gym-card border border-gym-border/80 hover:border-gym-red-600/40 rounded-2xl p-6 shadow-card-dark transition-colors duration-300">
     <div className="flex items-center justify-between mb-4">
@@ -43,6 +47,15 @@ export const TarjetaKpi = ({
       <div className="space-y-1">
         <h3 className="text-2xl font-black text-white tracking-tight">{valor}</h3>
         {detalle && <p className="text-xs text-gym-muted">{detalle}</p>}
+        {enlace && (
+          <Link
+            to={enlace.a}
+            className="inline-flex items-center gap-1 pt-2 text-xs font-bold uppercase tracking-wider text-gym-red-500 hover:text-gym-red-400 transition-colors"
+          >
+            {enlace.texto}
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+        )}
       </div>
     )}
   </div>

@@ -4,8 +4,10 @@ import { Cargando, ErrorDeCarga } from '../../../components/estado/Estados';
 import { formatearFecha } from '../../../lib/formato';
 import { useSesion } from '../../../auth/sesion';
 import { logout } from '../../../auth/api';
+import { RUTAS_LOGIN } from '../../../auth/rutas';
 import { useSocio } from '../../socios/hooks';
 import { EstadoSocioBadge } from '../../socios/components/EstadoSocioBadge';
+import { DiasRestantes } from '../components/DiasRestantes';
 
 /**
  * Portal del socio: su propia ficha, leída de `GET /clientes/{id}`.
@@ -25,7 +27,7 @@ export const PortalSocioPage = () => {
   const salir = async () => {
     await logout('socio');
     cerrarSesion();
-    navigate('/login', { replace: true });
+    navigate(RUTAS_LOGIN.socio, { replace: true });
   };
 
   return (
@@ -68,6 +70,8 @@ export const PortalSocioPage = () => {
                 </span>
                 <EstadoSocioBadge estado={socio.estado} />
               </div>
+
+              <DiasRestantes socio={socio} />
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t border-gym-border/60">
                 <div className="space-y-1">

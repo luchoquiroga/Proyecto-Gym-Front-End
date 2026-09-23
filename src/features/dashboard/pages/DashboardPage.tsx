@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, CreditCard, DollarSign, LayoutDashboard, Users } from 'lucide-react';
+import { ArrowUpRight, CreditCard, DollarSign, LayoutDashboard, UserCheck, Users } from 'lucide-react';
 import { EncabezadoPagina } from '../../../components/ui/EncabezadoPagina';
 import { Cargando, ErrorDeCarga, SinDatos } from '../../../components/estado/Estados';
 import { formatearFecha, formatearPesos, nombreDeMes } from '../../../lib/formato';
@@ -7,7 +7,7 @@ import { useSesion } from '../../../auth/sesion';
 import { useSocios } from '../../socios/hooks';
 import { EstadoSocioBadge } from '../../socios/components/EstadoSocioBadge';
 import { TarjetaKpi } from '../components/TarjetaKpi';
-import { useGananciasMensuales } from '../hooks';
+import { useGananciasMensuales, useSociosPorEstado } from '../hooks';
 
 export const DashboardPage = () => {
   const principal = useSesion((s) => s.principal);
@@ -17,6 +17,7 @@ export const DashboardPage = () => {
   // las primeras filas. Contar en el navegador trayendo la lista entera dejó de
   // ser posible cuando el listado pasó a estar paginado.
   const socios = useSocios(0, 5);
+  const porEstado = useSociosPorEstado();
 
   const mesEnCurso = ganancias.data
     ? `${nombreDeMes(ganancias.data.mes)} de ${ganancias.data.anio}`
@@ -30,7 +31,7 @@ export const DashboardPage = () => {
         icono={LayoutDashboard}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         <TarjetaKpi
           titulo="Ingresos del mes"
           icono={DollarSign}
@@ -38,6 +39,16 @@ export const DashboardPage = () => {
           error={ganancias.isError ? ganancias.error : undefined}
           valor={ganancias.data ? formatearPesos(ganancias.data.totalGanancias) : null}
           detalle={mesEnCurso}
+          // El mes lo toma de la respuesta, no del reloj del navegador: el
+          // desglose abre exactamente el mes que el backend sumó.
+          enlace={
+            ganancias.data
+              ? {
+                  a: `/staff/pagos?anio=${ganancias.data.anio}&mes=${ganancias.data.mes}`,
+                  texto: 'Ver los pagos',
+                }
+              : undefined
+          }
         />
         <TarjetaKpi
           titulo="Cobros del mes"
@@ -55,11 +66,21 @@ export const DashboardPage = () => {
           valor={socios.data?.totalElementos ?? null}
           detalle="Total del padrón, activos e inactivos"
         />
+        {/* Sale de GET /dashboard/socios: contar los activos de una página en el
+            navegador daría un número equivocado (ticket W9). */}
+        <TarjetaKpi
+          titulo="Socios activos"
+          icono={UserCheck}
+          cargando={porEstado.isLoading}
+          error={porEstado.isError ? porEstado.error : undefined}
+          valor={porEstado.data?.activos ?? null}
+          detalle={
+            porEstado.data
+              ? `${porEstado.data.morosos} morosos · ${porEstado.data.inactivos} inactivos`
+              : undefined
+          }
+        />
       </div>
-
-      {/* La tarjeta de "socios activos" no está a propósito: no hay ningún
-          endpoint que devuelva ese número, y calcularlo contando una página en
-          el navegador daría un número equivocado (ticket W9). */}
 
       <div className="bg-gym-card border border-gym-border/80 rounded-2xl shadow-card-dark overflow-hidden">
         <div className="flex items-center justify-between gap-4 p-6 pb-4">
