@@ -390,6 +390,73 @@ Los que aparecieron al escribir esto están especificados en
 - **F6.4** restringe `PATCH /clientes/{id}/estado`: la UI de socios no debe
   ofrecer "poner en ACTIVO" a mano.
 
-La cantidad de socios activos del dashboard (W9) **sigue sin endpoint** y no
-entró a la Fase 6: hasta que exista, esa tarjeta se saca en vez de calcularla
-mal en el navegador.
+La cantidad de socios activos del dashboard (W9) no entró a la Fase 6. **Se
+resolvió en la Fase 9** (`GET /dashboard/socios`, pedido B5) y la tarjeta
+volvió el 2026-09-23.
+
+### Pedidos del front después de la Fase 9
+
+B1–B5 se resolvieron en la Fase 9 del backend
+(`api\specs\2026-09-23-fase9-pedidos-del-front.md`).
+
+#### B6 — La serie de ganancias por mes en una sola llamada (solo ADMIN)
+
+**Por qué.** El gráfico de ingresos del dashboard (paso 6) muestra los últimos
+12 meses, y hoy lo arma con **12 peticiones** a `ganancias-mensuales`, una por
+mes. Funciona y queda en cache, pero es tráfico de más, y el front tiene que
+decidir qué pasa si falla una (hoy: falla la serie entera).
+
+**No es un endpoint de registros.** Uno de registros ya existe —
+`GET /pagos?desde=&hasta=`, que usa el desglose de W13— y no sirve para esto:
+traería cientos de pagos paginados para sumar 12 números, y la regla de qué
+cuenta como ingreso (sin anulados, por `fechaPago`) pasaría a vivir también en
+el front. Los totales los calcula el backend.
+
+**Contrato propuesto.**
+
+```
+GET /api/v1/dashboard/ganancias-por-mes?desde=2025-10&hasta=2026-09
+```
+
+```jsonc
+// 200 — una lista, un elemento por mes, del más viejo al más nuevo
+[
+  { "anio": 2025, "mes": 10, "totalGanancias": 420000, "cantidadPagos": 12 },
+  { "anio": 2025, "mes": 11, "totalGanancias": 0,      "cantidadPagos": 0  },
+  // ...
+  { "anio": 2026, "mes": 9,  "totalGanancias": 215000, "cantidadPagos": 6  }
+]
+```
+
+Reglas:
+
+- **Solo ADMIN.** Ya lo cubre la regla de ruta de `/api/v1/dashboard/**`;
+  GERENCIA y CLIENTE reciben 403.
+- **Cada elemento es un `GananciasMensualesResponse`**, el DTO que ya existe:
+  el front no cambia de tipos.
+- **Todos los meses del rango, también los que dan cero.** Si un mes sin
+  cobros no viene, el gráfico no puede distinguir "no hubo cobros" de "faltó
+  el dato". Rellenar los huecos es del backend.
+- **La misma regla que `ganancias-mensuales`**: sin anulados, por `fechaPago`
+  del primer al último día del mes. Idealmente las dos salen del mismo método
+  del service, para que un mes sume lo mismo en los dos endpoints.
+- **`desde` y `hasta` en formato `AAAA-MM`**, los dos inclusive. Sin
+  parámetros: los últimos 12 meses hasta el actual, con el "hoy" de Argentina
+  (el `Clock` de la Fase 9).
+- **400 con `mensaje`** si `desde` es posterior a `hasta`, si el formato no es
+  `AAAA-MM`, o si el rango pasa de un **tope** (sugerido: 24 meses). Sin tope,
+  alguien puede pedir cincuenta años.
+
+**Implementación.** Dos caminos válidos: un bucle en el service que reutilice
+el cálculo de un mes (12 consultas, pero dentro del servidor y sin duplicar la
+regla), o un solo `GROUP BY` año/mes. Con el volumen de un gimnasio alcanza el
+primero.
+
+**Tests sugeridos.** Un mes sin cobros viene en cero y no falta; un pago
+anulado no suma; la suma de un mes coincide con `ganancias-mensuales` de ese
+mes; rango invertido, mal formado y de más de 24 meses → 400; GERENCIA → 403.
+
+**Impacto en el front.** Cambia solo `useGananciasDeMeses` en
+`features/dashboard/hooks.ts`: de 12 consultas a una, y se va la lógica de
+"si falla una, falla todo". El gráfico, la tabla y los estados no cambian.
+`CONTRATO-API.md` se actualiza con el endpoint nuevo.

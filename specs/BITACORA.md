@@ -76,10 +76,10 @@ y son los que más deuda sacan.
   19/09 para poder probar: el socio Charles Quiroga quedó **ACTIVO** con un pago
   de $35.000 (Pase Mensual, vence el 19/10/2026), y existe una cuenta de staff
   `gerencia` con rol GERENCIA. Son datos de una base descartable.
-- **Pedido para el backend: la serie de ganancias en una sola llamada.** El
-  gráfico del dashboard hace 12 peticiones a `ganancias-mensuales`, una por
-  mes. Anda y queda en cache, pero un `GET /dashboard/ganancias-por-mes?desde=&hasta=`
-  (o `?meses=12`) lo resolvería en una. Cuando exista, se cambia solo
+- **Pedido para el backend B6: la serie de ganancias en una sola llamada.**
+  Especificado en `TICKETS.md` §6 (`GET /dashboard/ganancias-por-mes`, totales
+  por mes con los ceros incluidos; no un endpoint de registros). Hoy el
+  gráfico hace 12 peticiones. Cuando exista, se cambia solo
   `useGananciasDeMeses` en `features/dashboard/hooks.ts`.
 - **Pedido para el backend: `sort` con un campo inexistente devuelve 500.**
   Debería ser un 400 con mensaje. No rompe nada en la web —el front solo manda
