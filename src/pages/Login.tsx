@@ -1,33 +1,40 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { AlertCircle, Eye, EyeOff, Lock, User } from 'lucide-react';
+import { AlertCircle, CircleCheck, Eye, EyeOff, Lock, User } from 'lucide-react';
 import { loginStaff } from '../auth/api';
 import { useSesion } from '../auth/sesion';
 import { RUTAS_LOGIN, rutaInicial } from '../auth/rutas';
 import { mensajeDeError } from '../lib/errores';
 import { PantallaAuth, claseLinkAuth } from '../components/layout/PantallaAuth';
+import type { AvisoDeLogin } from '../features/cuenta/components/CambiarContrasena';
 
 /**
  * Login del staff (`/usuarios/login`, se identifica con el NOMBRE de usuario).
  * El socio tiene su propia puerta, `LoginSocioPage`, contra `/clientes/login`.
  */
+/** Lo que puede traer la navegación hasta acá. */
+type EstadoNavegacion = { from?: { pathname: string } } & Partial<AvisoDeLogin>;
+
 export const Login = () => {
-  const [nombre, setNombre] = useState('');
+  const location = useLocation();
+  const estado = (location.state ?? {}) as EstadoNavegacion;
+
+  // Después de cambiar la contraseña se llega con el usuario ya escrito.
+  const [nombre, setNombre] = useState(estado.nombre ?? '');
   const [contrasena, setContrasena] = useState('');
   const [verContrasena, setVerContrasena] = useState(false);
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
 
   const iniciarSesion = useSesion((s) => s.iniciarSesion);
   const navigate = useNavigate();
-  const location = useLocation();
 
   const ingreso = useMutation({
     mutationFn: loginStaff,
     onSuccess: ({ principal, accessToken }) => {
       iniciarSesion('staff', principal, accessToken);
 
-      const origen = (location.state as { from?: { pathname: string } } | null)?.from?.pathname;
+      const origen = estado.from?.pathname;
       const destino = origen?.startsWith('/staff') ? origen : rutaInicial(principal);
       navigate(destino, { replace: true });
     },
@@ -62,6 +69,13 @@ export const Login = () => {
         </span>
       }
     >
+      {estado.aviso && !mensajeError && (
+        <div className="mb-6 p-4 rounded-xl bg-emerald-950/30 border border-emerald-700/50 flex items-start gap-3 animate-fade-in">
+          <CircleCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+          <p className="text-sm text-emerald-200/90 leading-snug">{estado.aviso}</p>
+        </div>
+      )}
+
       {mensajeError && (
         <div className="mb-6 p-4 rounded-xl bg-gym-red-900/20 border border-gym-red-600/40 flex items-start gap-3 animate-fade-in">
           <AlertCircle className="w-5 h-5 text-gym-red-500 shrink-0 mt-0.5" />

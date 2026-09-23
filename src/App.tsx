@@ -11,6 +11,7 @@ import { DashboardPage } from './features/dashboard/pages/DashboardPage';
 import { SociosPage } from './features/socios/pages/SociosPage';
 import { PlanesPage } from './features/planes/pages/PlanesPage';
 import { PagosPage } from './features/pagos/pages/PagosPage';
+import { CuentasPage } from './features/staff/pages/CuentasPage';
 import { PortalSocioPage } from './features/portal-socio/pages/PortalSocioPage';
 import { LoginSocioPage } from './features/portal-socio/pages/LoginSocioPage';
 import { RegistroSocioPage } from './features/portal-socio/pages/RegistroSocioPage';
@@ -71,6 +72,14 @@ function App() {
                 element={
                   <RutaProtegida portal="staff" roles={['ADMIN']}>
                     <PagosPage />
+                  </RutaProtegida>
+                }
+              />
+              <Route
+                path="/staff/cuentas"
+                element={
+                  <RutaProtegida portal="staff" roles={['ADMIN']}>
+                    <CuentasPage />
                   </RutaProtegida>
                 }
               />

@@ -120,7 +120,7 @@ trae `errores`, se pintan los campos; cuando no, se muestra `mensaje` arriba.
 | 401 | sin token o vencido | el interceptor intenta refresh; si falla, a login |
 | 403 | el rol no alcanza | **mostrarlo, no tragarlo**: significa que la pantalla y los permisos se desincronizaron |
 | 404 | no existe (el mensaje suele contener "no encontrado") | mensaje en pantalla |
-| 409 | duplicado (documento, email, nombre de usuario) o borrado bloqueado | mensaje en pantalla, generalmente sobre un campo |
+| 409 | documento de socio duplicado, o borrado de plan bloqueado. **Ojo:** el email repetido del registro y el nombre de usuario repetido del staff son **400**, no 409 | mensaje en pantalla, generalmente sobre un campo |
 | 429 | rate limit de login | mensaje propio |
 
 ---
@@ -272,6 +272,12 @@ plan ya tiene pagos.
 | PATCH | `/usuarios/{id}/activo` | ADMIN | `{activo: true|false}`. Es la baja **y** la reactivación |
 
 `UsuarioResponse`: `{ "id": 1, "nombre": "admin", "rol": "ADMIN", "activo": true }`.
+
+**Alta con nombre repetido → 400, no 409**, con dos mensajes: "ya existe" si
+la cuenta está activa, o "pertenece a una cuenta dada de baja. Reactivala en vez
+de crear una nueva" si no (el nombre sigue ocupado). La baja **y el reset**
+revocan las sesiones de esa cuenta; reactivar no cambia la contraseña. El reset
+funciona también sobre una cuenta dada de baja. Verificado el 23/09.
 
 El backend rechaza auto-darse de baja y dar de baja al último ADMIN activo (400
 con mensaje). Son mensajes para mostrar, no casos a prevenir adivinando.
