@@ -261,11 +261,12 @@ tenía antes ya no existe.
   el refresh siguiente va a fallar: conviene cerrar sesión y mandar al login con
   un mensaje claro, en vez de esperar a que el interceptor lo descubra solo.
 
-### W9 — Dashboard con los números que el backend da — PARCIAL (2026-09-19)
+### W9 — Dashboard con los números que el backend da — HECHO el 2026-09-23
 
 > Ya está hecho lo que no dependía del backend: el total sale de
 > `totalElementos` y la tarjeta de "socios activos" se sacó en vez de
-> calcularla mal. **Queda abierto** el endpoint que devuelva los activos.
+> calcularla mal. **Cerrado el 2026-09-23**: la Fase 9 del backend agregó
+> `GET /dashboard/socios` y la tarjeta volvió, con morosos e inactivos al pie.
 
 `/api/v1/dashboard/ganancias-mensuales` sigue existiendo y es solo ADMIN.
 

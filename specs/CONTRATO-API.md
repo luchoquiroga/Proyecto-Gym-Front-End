@@ -1,8 +1,14 @@
 # Contrato del API: todo lo que el front necesita saber del backend
 
 Fecha: 2026-09-18
-Estado: vigente — refleja el backend después de sus 8 fases de replanteo
-(última: `documento` del socio obligatorio y único, commit `57a5b2d`)
+Estado: vigente — refleja el backend después de sus 9 fases
+(última: Fase 9, los pedidos del front B1–B5, commit `9c47895`)
+
+**El "hoy" del backend es el de Argentina** (Fase 9, B1): un `Clock` con zona
+`America/Argentina/Buenos_Aires` decide la fecha de un cobro sin `fechaPago`,
+el mes en curso del dashboard y la corrida de vencimientos (a medianoche de
+Argentina). El front calcula "hoy" en el navegador, que en el gimnasio es la
+misma zona.
 
 ## 0. Qué es esto y qué NO es
 
@@ -169,8 +175,9 @@ Cosas que hay que saber sí o sí para las pantallas de socios:
   El código tiene **8 caracteres** en mayúsculas, sin `0/O/1/I`, y se busca
   exacto (el front lo normaliza). Todos los rechazos son **400 con `mensaje`**
   —código inválido o usado, cuenta ya registrada, email de otro socio—; el email
-  repetido acá es 400, no 409. La contraseña del socio solo exige no estar
-  vacía. Verificado contra el backend el 22/09.
+  repetido acá es 400, no 409. La contraseña pide **al menos 8 caracteres**
+  (Fase 9, B3); el login no valida largo, así que una cuenta vieja con
+  contraseña corta sigue entrando. Verificado contra el backend el 22/09.
 - **`codigoActivacion` aparece una sola vez, en la respuesta del alta.** Es lo
   que el staff le entrega en mano al socio para que después se registre y entre
   al portal. La pantalla de alta **tiene que mostrarlo bien visible**: si se
@@ -192,7 +199,7 @@ Cosas que hay que saber sí o sí para las pantallas de socios:
 | GET | `/pagos/{id}` | **solo ADMIN** | |
 | GET | `/pagos/cliente/{clienteId}` | **solo ADMIN** | lista plana |
 | POST | `/pagos` | ADMIN, GERENCIA | cobrar |
-| POST | `/pagos/{id}/anulacion` | **solo ADMIN** | body `{motivo}`, obligatorio, máx. 300 |
+| POST | `/pagos/{id}/anulacion` | **solo ADMIN** | body `{motivo}`, obligatorio, máx. 300. **400 si hay un pago encadenado después** (ver abajo) |
 
 ```jsonc
 // PagoRequest — fechaPago es opcional (default: hoy)
@@ -214,14 +221,26 @@ Reglas del backend que la UI tiene que respetar:
   pagos y no es un olvido. Corregir un importe = anular + volver a cobrar.
 - **`registrado_por` sale del token**, nunca del body. No lo mandes.
 - **`montoAbonado` es opcional**: si no va, el backend cobra el precio del plan.
-- **El período nuevo arranca en `fechaPago`, no a continuación del vigente**:
-  `fechaVencimiento = fechaPago + plan.duracion`. Cobrarle antes de tiempo a un
-  socio al día le hace perder los días que se superponen. El vencimiento del
-  socio es el **mayor** entre sus pagos válidos (verificado en
-  `PagoServiceImpl.registrarPago` y `PagoRepository`, 22/09).
+- **El cobro anticipado se encadena** (Fase 9, B2), sea cual sea el plan:
+
+  ```
+  vigente = MAX(fechaVencimiento) de los pagos válidos con fechaPago <= la del cobro
+  inicio  = max(fechaPago, vigente)
+  vence   = inicio + plan.duracion
+  ```
+
+  `fechaPago` sigue siendo el día en que entró la plata. Para un cobro con
+  fecha de hoy, `vigente` es el `fechaVencimiento` del socio. Para uno
+  **retroactivo** depende de los pagos de esa época, que GERENCIA no puede
+  leer: el front no lo anticipa, lo muestra desde la respuesta.
+- El vencimiento del socio es el **mayor** entre sus pagos válidos.
 - **Un pago retroactivo cuyo período ya terminó responde 201, no 400**: se
   registra, pero no activa al socio (solo activa si el vencimiento es posterior
   a hoy). La UI no lo tiene que mostrar como error, o se cobra dos veces.
+- **Anular un pago que tiene otro encadenado después → 400**, con un mensaje
+  que nombra al pago posterior y dice que hay que anular ese primero. Es un
+  pago registrado después (id mayor) y cobrado durante el período de este. No
+  se recalcula nada: un pago no se edita.
 - **GERENCIA cobra pero no lee ninguna lectura de pagos.** Si una pantalla de
   GERENCIA necesita saber si un socio está al día, usa `estado` +
   `fechaVencimiento` del socio, que no exponen plata.
@@ -247,7 +266,7 @@ plan ya tiene pagos.
 | Método | Ruta | Rol | Notas |
 |---|---|---|---|
 | GET | `/usuarios?page=&size=&sort=` | ADMIN | **incluye las cuentas dadas de baja**; `activo` las distingue |
-| POST | `/usuarios` | ADMIN | `{nombre, contrasena, rol}` → 201 `UsuarioResponse` |
+| POST | `/usuarios` | ADMIN | `{nombre, contrasena, rol}` → 201 `UsuarioResponse`. Contraseña mín. 8 |
 | PUT | `/usuarios/cambiar-contrasena` | ADMIN, GERENCIA | la **propia**; `{contrasenaActual, nuevaContrasena}` (mín. 8) |
 | PUT | `/usuarios/{id}/contrasena` | ADMIN | reset de **otra** cuenta; `{nuevaContrasena}`. Contra uno mismo → error |
 | PATCH | `/usuarios/{id}/activo` | ADMIN | `{activo: true|false}`. Es la baja **y** la reactivación |
@@ -267,6 +286,16 @@ con mensaje). Son mensajes para mostrar, no casos a prevenir adivinando.
 
 Es un **agregado de un mes**. El desglose del mes (los pagos uno por uno, como
 pide el alcance del dashboard) sale de `GET /pagos?desde=&hasta=`.
+
+`GET /dashboard/socios` (Fase 9, B5), cuántos socios hay **hoy** en cada estado:
+
+```jsonc
+{ "activos": 87, "morosos": 12, "inactivos": 38 }
+```
+
+Es una foto de hoy, no de un período: por eso es un endpoint aparte y no
+depende del mes que se pida en ganancias. Cuenta el estado guardado, que la
+corrida diaria mantiene al día. GERENCIA recibe 403, como en todo el dashboard.
 
 ### Paginación — vale para `/clientes`, `/pagos` y `/usuarios`
 

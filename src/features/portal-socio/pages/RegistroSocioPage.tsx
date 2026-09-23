@@ -101,6 +101,7 @@ export const RegistroSocioPage = () => {
           autoComplete="new-password"
           disabled={registro.isPending}
           error={errors.contrasena?.message}
+          ayuda="Al menos 8 caracteres."
           {...register('contrasena')}
         />
         <CampoTexto

@@ -182,13 +182,7 @@ const CamposCobro = ({ socio, planes, registrar, onCerrar, onCobrado }: CamposCo
         />
       </div>
 
-      {prevision && (
-        <AvisoPrevisionCobro
-          prevision={prevision}
-          fechaPago={fechaPago}
-          vencimientoActual={socio.fechaVencimiento}
-        />
-      )}
+      {prevision && <AvisoPrevisionCobro prevision={prevision} />}
 
       <div className="flex items-center justify-end gap-3 pt-2">
         <button

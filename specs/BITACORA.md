@@ -7,10 +7,10 @@ no coinciden, mandan ellos.
 
 Se actualiza **al terminar cada tramo**, no al final de todo.
 
-## Estado al 2026-09-22
+## Estado al 2026-09-23
 
-- **El backend está terminado** para el alcance definido: ocho fases de
-  replanteo cerradas, sin superficie de más, desplegado en Render desde `master`
+- **El backend está terminado** para el alcance definido: nueve fases
+  cerradas (la 9 fueron los pedidos del front, B1–B5), sin superficie de más, desplegado en Render desde `master`
   (migraciones V3–V7 ya corrieron). **No bloquea nada del front.**
 - **La web ya no miente ni le cierra la puerta a GERENCIA.** Las cuatro lecturas
   están contra el contrato vigente (paginación, `documento`, `fechaVencimiento`,
@@ -44,23 +44,14 @@ y son los que más deuda sacan.
 | 7 | Tests del interceptor y de los guards | pendiente |
 | 8 | Shell de escritorio (repo aparte) | pendiente |
 
-## Abierto al 2026-09-22
+## Abierto al 2026-09-23
 
 - **Falta probar W10 a mano de punta a punta**: dar de alta un socio, activar
   la cuenta con el código, entrar, F5 en el portal (silent refresh contra
   `/clientes/refresh`) y que la sesión vencida mande a `/socio/ingresar`.
-- **Discutir en el backend: la contraseña del socio no tiene largo mínimo**
-  (`ClienteRegistroRequest` solo pide `@NotBlank`; la del staff pide 8). El
-  front no inventa la regla: se agrega allá y el `zod` la copia.
-- **Discutir en el backend: cobrar antes de tiempo hace perder días.** El
-  período nuevo arranca en `fechaPago` y no a continuación del vigente. Hoy la
-  web **avisa** cuántos días se superponen antes de confirmar, pero no lo
-  resuelve: la regla es del backend (`PagoServiceImpl.registrarPago`) y se
-  decide allá, no en el front.
-- **"Hoy" lo decide el navegador en el aviso y el servidor en el backend.** Si
-  el servidor corre en UTC (Render), entre las 21 y las 24 de Argentina ya es
-  "mañana" para él: el aviso de "pago ya vencido" podría diferir en un día en
-  ese caso borde. La fecha de pago que se manda es siempre la del navegador.
+- **Probar a mano la Fase 9 desde la web**: el cobro anticipado encadenado
+  (Charles vence el 19/10: un mes cobrado hoy tiene que vencer el 18/11, no el
+  23/10) y la tarjeta de socios activos, que cambia al dar de baja.
 - **Falta ver el área de GERENCIA con ojos.** El backend ya confirmó los
   permisos, pero nadie entró todavía a la web con esa cuenta: hay que mirar que
   la navegación no muestre Dashboard ni Pagos, y que entrar a `/staff/pagos` a
@@ -74,8 +65,6 @@ y son los que más deuda sacan.
 - **Los listados todavía no mandan `sort`.** Ya está confirmado que el
   backend lo acepta (`CONTRATO-API.md` §3, "Paginación", corregido el 23/09);
   usarlo, por ejemplo por apellido en socios, es parte del paso 4.
-- **La cantidad de socios activos sigue sin endpoint** (W9). La tarjeta no está,
-  y no se calcula en el navegador.
 - Se borró `src/pages/Home.tsx`: era código muerto de un tema anterior (ninguna
   ruta lo usaba y usaba colores que ya no existen en `tailwind.config.js`).
 
@@ -107,6 +96,30 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-23** — **Adaptar la web a la Fase 9 del backend**, que resolvió los
+  cinco pedidos B1–B5 (`api\specs\2026-09-23-fase9-pedidos-del-front.md`, §8
+  "Impacto en el front"). Sin dependencias nuevas.
+  - **Cobro encadenado (B2).** `preverCobro` copia la regla nueva: si el socio
+    todavía tiene días pagos, el período nuevo arranca cuando terminan. El
+    aviso de "se pierden N días" **se borró**, porque ya no pasa. Para un cobro
+    con **fecha pasada**, el aviso dice que el vencimiento lo va a mostrar el
+    comprobante: el backend encadena con lo que el socio tenía pago en esa
+    fecha, y eso sale de pagos que GERENCIA no puede leer. No se adivina.
+  - **Contraseña de 8 (B3)** en el `zod` del registro del socio. El login
+    **no** valida largo, a propósito: las cuentas viejas con contraseña corta
+    tienen que poder seguir entrando.
+  - **Tarjeta de socios activos (B5, cierra W9)**, leyendo
+    `GET /dashboard/socios`, con morosos e inactivos al pie. Cuelga de
+    `['dashboard', 'socios']`; por eso **el alta y la baja de socios ahora
+    también invalidan `['dashboard']`**: si no, el conteo quedaba viejo
+    después de dar de baja a alguien.
+  - B1 (zona horaria) y B4 (UTF-8) no necesitaron cambios acá. Con B1, el
+    "hoy" del navegador y el del backend coinciden en el gimnasio.
+  - El anulado con pago encadenado (400 nuevo) queda documentado para W12, que
+    todavía no tiene pantalla.
+  - `CONTRATO-API.md` quedó al día con la Fase 9.
+  - Verificado: `pnpm build` y `pnpm lint` en verde.
 
 - **2026-09-22 (segundo tramo)** — Paso 5, segunda mitad: **W10, portal del
   socio**. Sin dependencias nuevas (`date-fns` ya había entrado con W5).
