@@ -225,7 +225,7 @@ Hoy el botón "Registrar Socio" no hace nada. ADMIN y GERENCIA.
   pasa a filtrar solo la página actual, así que el buscador tiene que pegarle al
   endpoint.
 
-### W7 — Gestión de cuentas de staff (solo ADMIN)
+### W7 — Gestión de cuentas de staff (solo ADMIN) — HECHO el 2026-09-23
 
 No existe ninguna pantalla. Es lo que cierra la Fase 5.
 
@@ -246,7 +246,7 @@ No existe ninguna pantalla. Es lo que cierra la Fase 5.
 Hoy no hay ningún `GET /usuarios` (ni listado ni por id) en el backend: esta
 pantalla lo necesita y **es un ticket de backend**, no de acá.
 
-### W8 — Cambiar la propia contraseña (ADMIN y GERENCIA)
+### W8 — Cambiar la propia contraseña (ADMIN y GERENCIA) — HECHO el 2026-09-23
 
 No existe la pantalla, y ahora es el único camino para que un empleado cambie su
 clave.

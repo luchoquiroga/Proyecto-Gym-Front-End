@@ -3,11 +3,13 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   CreditCard,
   Dumbbell,
+  KeyRound,
   LayoutDashboard,
   LogOut,
   Menu,
   Shield,
   Tags,
+  UserCog,
   Users,
   X,
 } from 'lucide-react';
@@ -15,6 +17,7 @@ import { useSesion } from '../../auth/sesion';
 import { logout } from '../../auth/api';
 import { ES_PRODUCCION } from '../../api/config';
 import type { RolStaff } from '../../auth/types';
+import { CambiarContrasena } from '../../features/cuenta/components/CambiarContrasena';
 
 /**
  * Shell de las dos áreas de staff.
@@ -28,6 +31,7 @@ const ITEMS = [
   { nombre: 'Socios', ruta: '/staff/socios', icono: Users, roles: ['ADMIN', 'GERENCIA'] },
   { nombre: 'Planes', ruta: '/staff/planes', icono: Tags, roles: ['ADMIN', 'GERENCIA'] },
   { nombre: 'Pagos', ruta: '/staff/pagos', icono: CreditCard, roles: ['ADMIN'] },
+  { nombre: 'Staff', ruta: '/staff/cuentas', icono: UserCog, roles: ['ADMIN'] },
 ] satisfies ReadonlyArray<{
   nombre: string;
   ruta: string;
@@ -37,6 +41,7 @@ const ITEMS = [
 
 export const StaffLayout = () => {
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [cambiandoContrasena, setCambiandoContrasena] = useState(false);
   const principal = useSesion((s) => s.principal);
   const cerrarSesion = useSesion((s) => s.cerrarSesion);
   const navigate = useNavigate();
@@ -137,6 +142,14 @@ export const StaffLayout = () => {
           </div>
 
           <button
+            onClick={() => setCambiandoContrasena(true)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-gym-dark hover:bg-gym-hover text-gym-muted hover:text-white border border-gym-border transition-colors"
+          >
+            <KeyRound className="w-4 h-4" />
+            Cambiar contraseña
+          </button>
+
+          <button
             onClick={salir}
             className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-gym-dark hover:bg-gym-red-600/20 text-gym-muted hover:text-gym-red-400 border border-gym-border hover:border-gym-red-600/40 transition-colors"
           >
@@ -169,6 +182,8 @@ export const StaffLayout = () => {
           </div>
         </main>
       </div>
+
+      {cambiandoContrasena && <CambiarContrasena onCerrar={() => setCambiandoContrasena(false)} />}
     </div>
   );
 };

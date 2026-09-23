@@ -49,6 +49,8 @@ y son los que más deuda sacan.
 - **Falta probar W10 a mano de punta a punta**: dar de alta un socio, activar
   la cuenta con el código, entrar, F5 en el portal (silent refresh contra
   `/clientes/refresh`) y que la sesión vencida mande a `/socio/ingresar`.
+- **Cuenta de staff de prueba `prueba_w7`** (id 5, GERENCIA), dada de baja,
+  creada el 23/09 para probar W7. Su contraseña es `reseteada123`.
 - **Datos de prueba que quedaron en `gym_api_local`** (23/09): socios 4 a 7
   (documentos `PRUEBA…`, `ESTADO…`, `CADENA…`, `CADMES…`). Los pagos #4, #5,
   #8 y #10 están anulados. **#6 ($35.000), #7 ($1.000) y #9 ($35.000) siguen
@@ -107,6 +109,48 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-23 (cuarto tramo)** — **W7, cuentas de staff**. Sin dependencias
+  nuevas. Feature nueva `features/staff`, pantalla `/staff/cuentas` con el
+  ítem "Staff" en el menú, solo ADMIN.
+  - Listado con las activas primero y las dadas de baja al final
+    (`sort=activo,desc&sort=nombre,asc`), cada una con su acción: dar de baja
+    o reactivar (el mismo `PATCH`), y resetear la contraseña.
+  - **Reactivar es el camino, no crear otra igual.** El nombre de una cuenta
+    dada de baja sigue ocupado, y el 400 del alta ya lo dice ("Reactivala en
+    vez de crear una nueva"). El listado tiene el botón a mano.
+  - **Sobre la propia cuenta no se ofrece ni la baja ni el reset**, porque el
+    backend rechaza las dos (400). Para la propia está "Cambiar contraseña" del
+    menú (W8). "Es el último administrador" no se adivina: si pasa, se muestra
+    el 400. Comparar el id propio con el de la fila es seguro porque los dos
+    son de `usuarios`.
+  - El campo del reset se llama `nuevaContrasena`, como en el DTO, para que el
+    400 de validación caiga en él.
+  - **Corrección al contrato**: el nombre de usuario repetido es **400, no
+    409**, y el reset también revoca sesiones.
+  - Verificado por API (16/16). **No se probó "último administrador"**: habría
+    que dar de baja la cuenta `admin`.
+  - **Incidente de git, sin pérdidas.** El 23/09 a las 17:08 el `.git` local
+    apareció recreado (sin objetos, con `RamaLuciano` vacía): la historia
+    local se fue, pero toda estaba en GitHub (`master`, PR #1 mergeado en
+    `d8312cc`). Se reconectó con `git reset origin/master` —sin `--hard`,
+    verificando que ningún archivo cambiara— y W7 + W8 se commitearon encima.
+    Si vuelve a pasar: la copia buena es `origin/master`.
+
+- **2026-09-23 (tercer tramo)** — **W8, cambiar la propia contraseña**. Sin
+  dependencias nuevas. Feature nueva `features/cuenta`.
+  - Botón "Cambiar contraseña" en el pie del menú del staff, para los dos
+    roles. Pide la actual, la nueva (mínimo 8, distinta de la actual) y
+    repetirla; las dos primeras reglas son espejo del backend.
+  - **Después del cambio, la web cierra la sesión sola** y manda al login con
+    un aviso y el usuario ya escrito. Verificado contra el backend: el cambio
+    revoca los refresh tokens pero **el access token viejo sigue sirviendo**
+    hasta que vence. Sin el cierre explícito, la web seguiría andando hasta 30
+    minutos y después te sacaría sin explicación.
+  - La actual equivocada es un **400, no un 401**, así que el interceptor no la
+    toma como sesión vencida; se muestra arriba del formulario.
+  - Verificado por API con la cuenta `gerencia` (9/9), y su contraseña quedó
+    restaurada a la original.
 
 - **2026-09-23 (segundo tramo)** — **W12 (anular) y W13 (desglose del mes)**,
   juntos porque son la misma pantalla. Sin dependencias nuevas.
