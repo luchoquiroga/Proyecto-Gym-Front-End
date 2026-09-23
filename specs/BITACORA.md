@@ -41,7 +41,7 @@ y son los que más deuda sacan.
 | 4 | Listados paginados y búsqueda contra el servidor | pendiente |
 | 5 | Cobrar, y portal del socio con los días restantes | **hecho** (22/09) — W5 y W10 |
 | 6 | Dashboard de ADMIN | pendiente |
-| 7 | Tests del interceptor y de los guards | pendiente |
+| 7 | Tests del interceptor y de los guards | **hecho** (23/09) — `pnpm test`, 31 tests |
 | 8 | Shell de escritorio (repo aparte) | pendiente |
 
 ## Abierto al 2026-09-23
@@ -69,8 +69,9 @@ y son los que más deuda sacan.
   permisos, pero nadie entró todavía a la web con esa cuenta: hay que mirar que
   la navegación no muestre Dashboard ni Pagos, y que entrar a `/staff/pagos` a
   mano redirija en vez de romper.
-- **Falta probar la expiración del token** (esperar los 30 minutos o forzar un
-  401) para ver la cola del interceptor trabajando de verdad.
+- **La expiración del token ya tiene test automático** (paso 7: un solo
+  refresh, la cola, el refresh fallido), pero falta verla una vez en el
+  navegador contra el backend real, esperando los 30 minutos.
 - **Datos que quedaron en la base de pruebas** (`gym_api_local`), puestos el
   19/09 para poder probar: el socio Charles Quiroga quedó **ACTIVO** con un pago
   de $35.000 (Pase Mensual, vence el 19/10/2026), y existe una cuenta de staff
@@ -109,6 +110,27 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-23 (quinto tramo)** — **Paso 7, tests.** Dependencias nuevas, las
+  de `STACK.md` §7 más una que faltaba en el comando: `vitest`,
+  `@testing-library/react`, `@testing-library/dom` (par obligatoria),
+  `@testing-library/jest-dom`, `jsdom` y `msw`. Se corren con `pnpm test`.
+  - **El alcance es el de §2.6, ni más ni menos**: el interceptor (9 tests,
+    con `msw` en entorno Node), los guards (11) y los días hasta el
+    vencimiento (11).
+  - **Cada test se vio fallar**: se rompió a propósito el código que prueba y
+    se comprobó que el test lo detecta. Sin la cola del interceptor fallan 2;
+    si el refresh fallido no limpia la sesión, 1; si el guard ignora el rol,
+    2; con el vencimiento leído en UTC contra el "ahora" local, 8. Todo se
+    restauró y se verificó idéntico al commit.
+  - **Lo que se aprendió de eso**: la primera rotura de fechas (`new Date` en
+    las dos puntas de la resta) **no** era un bug: las dos fechas se corren
+    igual y la diferencia da bien. El off-by-one de verdad aparece al mezclar
+    una fecha leída en UTC con el "ahora" local. Se corrigió el comentario de
+    `lib/fechas.ts`, que lo explicaba mal.
+  - Zona horaria de los tests fijada a Argentina en `vite.config.ts`, para
+    que el borde de las 23:30 dé igual en cualquier máquina (y en un CI en
+    UTC).
 
 - **2026-09-23 (cuarto tramo)** — **W7, cuentas de staff**. Sin dependencias
   nuevas. Feature nueva `features/staff`, pantalla `/staff/cuentas` con el

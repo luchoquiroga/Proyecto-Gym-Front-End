@@ -118,6 +118,14 @@ se ven mirando la pantalla:
 `msw` (Mock Service Worker) para los dos primeros: intercepta a nivel red, así
 el interceptor se ejercita de verdad en vez de mockear axios.
 
+Notas de la instalación (paso 7, 2026-09-23):
+- `@testing-library/dom` es dependencia **par obligatoria** de
+  `@testing-library/react` 16: sin ella no corre. El comando de §7 la incluye.
+- El script de instalación de `msw` está en `false` en `pnpm-workspace.yaml`:
+  solo copia el service worker para el navegador, y acá `msw` corre en Node.
+- La zona horaria de los tests está fijada a Argentina (`test.env.TZ` en
+  `vite.config.ts`), porque el test de fechas prueba el borde de medianoche.
+
 ### 2.7 Lo que NO se usa
 
 | Descartado | Por qué |
@@ -387,7 +395,7 @@ pnpm add react-hook-form zod @hookform/resolvers
 pnpm add @tanstack/react-table
 pnpm add date-fns
 pnpm add recharts
-pnpm add -D vitest @testing-library/react @testing-library/jest-dom jsdom msw
+pnpm add -D vitest @testing-library/react @testing-library/dom @testing-library/jest-dom jsdom msw
 pnpm dlx shadcn@latest init     # solo si se adopta shadcn
 ```
 
