@@ -54,7 +54,8 @@ y son los que más deuda sacan.
   #8 y #10 están anulados. **#6 ($35.000), #7 ($1.000) y #9 ($35.000) siguen
   válidos y suman al total de septiembre.**
   Se dejan a propósito, por decisión del dueño. El socio 7 quedó INACTIVO por
-  el bug de arriba, antes del arreglo: el estado guardado no se corrige solo.
+  el bug del estado al anular (ver el historial del 23/09, arreglado en el
+  backend en `de3a0d8`): el estado ya guardado no se corrige solo.
 - **Probar a mano W12 y W13** con la cuenta de admin: anular un pago (tiene
   que quedar tachado y bajar el total del mes), intentar anular uno que tiene
   otro encadenado después (tiene que mostrar el 400 que nombra al posterior),
