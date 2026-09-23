@@ -21,6 +21,9 @@ Se actualiza **al terminar cada tramo**, no al final de todo.
 - **El stack quedó decidido** el 2026-09-18 (`STACK.md`): se conserva lo que ya
   existe y se agrega de a una pieza por ticket. Los pasos 1 y 2 no agregaron
   ninguna dependencia, como estaba previsto.
+- **El portal del socio se puede alcanzar** (W10): login por email, registro
+  con el código de activación y días restantes. Falta probarlo a mano de punta
+  a punta.
 - **El escritorio no empezó** y no debería empezar hasta que la web cubra lo que
   hoy hace la app Swing (o sea: hasta que GERENCIA pueda operar).
 
@@ -36,13 +39,19 @@ y son los que más deuda sacan.
 | 2 | Los dos principals (`STACK.md` §5) + habilitar el área de GERENCIA | **hecho** (19/09), junto con W2, W3 y W4 |
 | 3 | Socios: crear / editar / inhabilitar | **hecho** (19/09) — W6, con `react-hook-form` + `zod` |
 | 4 | Listados paginados y búsqueda contra el servidor | pendiente |
-| 5 | Cobrar, y portal del socio con los días restantes | **cobrar hecho** (22/09, W5, con `date-fns`); falta el portal (W10) |
+| 5 | Cobrar, y portal del socio con los días restantes | **hecho** (22/09) — W5 y W10 |
 | 6 | Dashboard de ADMIN | pendiente |
 | 7 | Tests del interceptor y de los guards | pendiente |
 | 8 | Shell de escritorio (repo aparte) | pendiente |
 
 ## Abierto al 2026-09-22
 
+- **Falta probar W10 a mano de punta a punta**: dar de alta un socio, activar
+  la cuenta con el código, entrar, F5 en el portal (silent refresh contra
+  `/clientes/refresh`) y que la sesión vencida mande a `/socio/ingresar`.
+- **Discutir en el backend: la contraseña del socio no tiene largo mínimo**
+  (`ClienteRegistroRequest` solo pide `@NotBlank`; la del staff pide 8). El
+  front no inventa la regla: se agrega allá y el `zod` la copia.
 - **Discutir en el backend: cobrar antes de tiempo hace perder días.** El
   período nuevo arranca en `fechaPago` y no a continuación del vigente. Hoy la
   web **avisa** cuántos días se superponen antes de confirmar, pero no lo
@@ -62,10 +71,9 @@ y son los que más deuda sacan.
   19/09 para poder probar: el socio Charles Quiroga quedó **ACTIVO** con un pago
   de $35.000 (Pase Mensual, vence el 19/10/2026), y existe una cuenta de staff
   `gerencia` con rol GERENCIA. Son datos de una base descartable.
-- **`sort` en los listados.** `TICKETS.md` W2 dice que los parámetros son
-  `?page=&size=&sort=nombre,asc`; `CONTRATO-API.md` §3 solo documenta `page` y
-  `size`. Por ahora **no se manda `sort`** y el orden es el que da el backend.
-  Verificar contra Swagger y corregir el documento que esté mal.
+- **Los listados todavía no mandan `sort`.** Ya está confirmado que el
+  backend lo acepta (`CONTRATO-API.md` §3, "Paginación", corregido el 23/09);
+  usarlo, por ejemplo por apellido en socios, es parte del paso 4.
 - **La cantidad de socios activos sigue sin endpoint** (W9). La tarjeta no está,
   y no se calcula en el navegador.
 - Se borró `src/pages/Home.tsx`: era código muerto de un tema anterior (ninguna
@@ -99,6 +107,36 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-22 (segundo tramo)** — Paso 5, segunda mitad: **W10, portal del
+  socio**. Sin dependencias nuevas (`date-fns` ya había entrado con W5).
+  - **Dos pantallas públicas nuevas**: `/socio/ingresar` (login por email
+    contra `/clientes/login`) y `/socio/registro` (canje del código de
+    activación). Son otra puerta, no una pestaña del login de staff: otro
+    identificador, otra cookie, otro refresh. Las dos logins se linkean entre
+    sí, y el registro, al terminar, manda al login con el email ya escrito
+    porque **el backend no inicia sesión al registrar**.
+  - **Cada área manda a su propio login.** `RutaProtegida` redirige según el
+    portal de la ruta (`RUTAS_LOGIN` en `auth/rutas.ts`), y la raíz sin sesión
+    va al login del último portal usado. Antes, un socio con la sesión vencida
+    caía en el login del staff.
+  - **El código de activación se normaliza** (mayúsculas, sin espacios ni
+    guiones) porque se dicta en persona y el backend lo busca exacto.
+  - **"Repetí la contraseña"** es solo del front; no se agregó un largo mínimo
+    que el backend no exige (quedó como tema para el backend).
+  - **Días restantes** (`portal-socio/components/DiasRestantes.tsx`): "te
+    quedan N días", "vence hoy" o "venció hace N días", en ámbar desde 5 días
+    antes. Si el socio está dado de baja **no se muestra cuenta regresiva**,
+    para no contradecir el estado.
+  - La tarjeta del login se sacó a `components/layout/PantallaAuth.tsx`, que
+    usan las tres pantallas sin sesión.
+  - Verificado: `pnpm build` y `pnpm lint` en verde. Contra el backend local,
+    con `curl`: el código inexistente (400 solo `mensaje`), el 400 de
+    validación del registro y del login (`errores` con los mismos nombres que
+    los campos del formulario), el 401 del login (`{mensaje}` sin `status`),
+    el refresh de socio sin cookie (401) y el preflight de CORS del registro.
+    **No se probó el camino feliz**: hace falta un código nuevo, y eso sale de
+    un alta con cuenta de staff.
 
 - **2026-09-22** — Paso 5, primera mitad: **W5, cobrar**. Dependencia nueva:
   `date-fns`, la que `STACK.md` §7 tenía prevista para este paso, y por la

@@ -276,15 +276,15 @@ total sale de `totalElementos`; **los activos no salen de ningún endpoint
 existente**, así que o se agrega al dashboard del backend (ticket de backend) o
 la tarjeta se saca hasta que exista. No inventar el número en el front.
 
-### W10 — El portal del socio no se puede alcanzar — PARCIAL (2026-09-19)
+### W10 — El portal del socio no se puede alcanzar — HECHO el 2026-09-22
 
 > Hecho: el arreglo conceptual de los tipos (`Principal` como unión
 > discriminada, `RolStaff` sin `CLIENTE`), el refresh por portal —así que la
 > sesión de un socio ya se puede restaurar— y la pantalla, que dejó de estar
 > hardcodeada y lee `GET /clientes/{id}`.
-> **Falta**: el login de socio (`/clientes/login`), el registro con el código de
-> activación, y los días restantes hasta el vencimiento (necesita `date-fns`,
-> paso 5 del `STACK.md`).
+> **Completado el 2026-09-22**: login de socio en `/socio/ingresar`, registro
+> con el código de activación en `/socio/registro`, y los días restantes en el
+> portal (con `date-fns`).
 
 `ClientePortal` y la ruta `/cliente/resumen` existen, pero **no hay forma de
 loguearse como socio**: el front solo llama a `/api/v1/usuarios/login`, y

@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSesion } from './sesion';
-import { rutaInicial } from './rutas';
+import { RUTAS_LOGIN, rutaInicial } from './rutas';
 import type { RolStaff, TipoPortal } from './types';
 
 interface RutaProtegidaProps {
@@ -24,7 +24,9 @@ export const RutaProtegida = ({ children, portal, roles }: RutaProtegidaProps) =
   if (cargandoSesion) return null;
 
   if (!principal) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Al login de ESTA área: a un socio con la sesión vencida no se le pide
+    // un nombre de usuario de staff.
+    return <Navigate to={RUTAS_LOGIN[portal]} state={{ from: location }} replace />;
   }
 
   // Un socio no entra a staff y viceversa: son principals de tablas distintas.

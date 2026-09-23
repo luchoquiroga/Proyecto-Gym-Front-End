@@ -128,7 +128,7 @@ autenticado.
 
 | Método | Ruta | Rol | Notas |
 |---|---|---|---|
-| GET | `/clientes` | ADMIN, GERENCIA | paginado (`?page=&size=`, default 20). Devuelve `PaginaResponse<ClienteResponse>` |
+| GET | `/clientes` | ADMIN, GERENCIA | paginado (`?page=&size=&sort=`, default 20). Devuelve `PaginaResponse<ClienteResponse>` |
 | GET | `/clientes/buscar?nombre=` | ADMIN, GERENCIA | **lista plana, sin paginar** |
 | GET | `/clientes/{id}` | ADMIN, GERENCIA, o el propio socio | el socio solo puede pedir su id; otro id → 403 |
 | POST | `/clientes` | ADMIN, GERENCIA | 201. **Devuelve `ClienteAltaResponse`, con `codigoActivacion`** |
@@ -149,7 +149,7 @@ autenticado.
 
 // ClienteAltaResponse (SOLO en el 201 del alta)
 { "id": 9, "nombre": "...", "apellido": "...", "telefono": "...",
-  "documento": "12345678", "estado": "INACTIVO", "codigoActivacion": "A7F3K9" }
+  "documento": "12345678", "estado": "INACTIVO", "codigoActivacion": "A7F3K9QM" }
 ```
 
 Cosas que hay que saber sí o sí para las pantallas de socios:
@@ -164,6 +164,13 @@ Cosas que hay que saber sí o sí para las pantallas de socios:
   guiones, y **al menos 6 caracteres ya normalizado**. No se valida contra el
   formato del DNI argentino a propósito, para que un pasaporte o una cédula
   puedan cargarse.
+- **El registro del socio** (`POST /clientes/registro`) responde 200 con
+  `{mensaje}` y **no inicia sesión**: después hay que pasar por `/clientes/login`.
+  El código tiene **8 caracteres** en mayúsculas, sin `0/O/1/I`, y se busca
+  exacto (el front lo normaliza). Todos los rechazos son **400 con `mensaje`**
+  —código inválido o usado, cuenta ya registrada, email de otro socio—; el email
+  repetido acá es 400, no 409. La contraseña del socio solo exige no estar
+  vacía. Verificado contra el backend el 22/09.
 - **`codigoActivacion` aparece una sola vez, en la respuesta del alta.** Es lo
   que el staff le entrega en mano al socio para que después se registre y entre
   al portal. La pantalla de alta **tiene que mostrarlo bien visible**: si se
@@ -181,7 +188,7 @@ Cosas que hay que saber sí o sí para las pantallas de socios:
 
 | Método | Ruta | Rol | Notas |
 |---|---|---|---|
-| GET | `/pagos?desde=&hasta=&page=&size=` | **solo ADMIN** | fechas ISO (`2026-09-01`). `PaginaResponse<PagoResponse>` |
+| GET | `/pagos?desde=&hasta=&page=&size=&sort=` | **solo ADMIN** | fechas ISO (`2026-09-01`). `PaginaResponse<PagoResponse>` |
 | GET | `/pagos/{id}` | **solo ADMIN** | |
 | GET | `/pagos/cliente/{clienteId}` | **solo ADMIN** | lista plana |
 | POST | `/pagos` | ADMIN, GERENCIA | cobrar |
@@ -239,7 +246,7 @@ plan ya tiene pagos.
 
 | Método | Ruta | Rol | Notas |
 |---|---|---|---|
-| GET | `/usuarios?page=&size=` | ADMIN | **incluye las cuentas dadas de baja**; `activo` las distingue |
+| GET | `/usuarios?page=&size=&sort=` | ADMIN | **incluye las cuentas dadas de baja**; `activo` las distingue |
 | POST | `/usuarios` | ADMIN | `{nombre, contrasena, rol}` → 201 `UsuarioResponse` |
 | PUT | `/usuarios/cambiar-contrasena` | ADMIN, GERENCIA | la **propia**; `{contrasenaActual, nuevaContrasena}` (mín. 8) |
 | PUT | `/usuarios/{id}/contrasena` | ADMIN | reset de **otra** cuenta; `{nuevaContrasena}`. Contra uno mismo → error |
@@ -269,6 +276,18 @@ pide el alcance del dashboard) sale de `GET /pagos?desde=&hasta=`.
 
 `page` arranca en **0**. Los nombres están en castellano y no son los de Spring
 (`content`/`number`/`size`): es un DTO propio, no serializa `Page`.
+
+**`sort` también se acepta** (`?sort=apellido,asc`, repetible para desempatar:
+`&sort=nombre,asc`). Los tres controllers reciben un `Pageable` de Spring y los
+servicios se lo pasan tal cual al repositorio (verificado el 23/09). Dos cosas:
+
+- Se ordena por **campos de la entidad**, no del DTO. En socios sirven
+  `nombre`, `apellido`, `documento` y `estado`, pero **no `fechaVencimiento` ni
+  `planVigente`**: se calculan a partir de los pagos y no son columnas de
+  `clientes`. En pagos, `fechaPago`, `fechaVencimiento` y `montoAbonado`.
+- Sin `sort`, el orden es el de la base (en la práctica, por id), que no está
+  garantizado. Qué responde un campo inexistente no está verificado: no lo
+  mandes a ciegas desde un input del usuario.
 
 ---
 
