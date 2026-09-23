@@ -1,4 +1,4 @@
-import { addDays, differenceInCalendarDays, endOfMonth, format, parseISO } from 'date-fns';
+import { addDays, differenceInCalendarDays, endOfMonth, format, parseISO, subMonths } from 'date-fns';
 
 /**
  * Aritmética de fechas ISO sin hora (`2026-09-30`), que es como las manda y
@@ -34,4 +34,19 @@ export const diasEntre = (desde: string, hasta: string): number =>
 export const rangoDelMes = (anio: number, mes: number): { desde: string; hasta: string } => {
   const primero = new Date(anio, mes - 1, 1);
   return { desde: format(primero, FORMATO_ISO), hasta: format(endOfMonth(primero), FORMATO_ISO) };
+};
+
+export interface AnioMes {
+  anio: number;
+  /** De 1 a 12, como lo espera el backend. */
+  mes: number;
+}
+
+/** Los últimos `cantidad` meses hasta el de `hoy` inclusive, del más viejo al más nuevo. */
+export const ultimosMeses = (cantidad: number, hoy: string): AnioMes[] => {
+  const actual = parseISO(hoy);
+  return Array.from({ length: cantidad }, (_, i) => {
+    const fecha = subMonths(actual, cantidad - 1 - i);
+    return { anio: fecha.getFullYear(), mes: fecha.getMonth() + 1 };
+  });
 };

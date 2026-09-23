@@ -7,6 +7,7 @@ import { useSesion } from '../../../auth/sesion';
 import { useSocios } from '../../socios/hooks';
 import { EstadoSocioBadge } from '../../socios/components/EstadoSocioBadge';
 import { TarjetaKpi } from '../components/TarjetaKpi';
+import { IngresosUltimosMeses } from '../components/IngresosUltimosMeses';
 import { useGananciasMensuales, useSociosPorEstado } from '../hooks';
 
 export const DashboardPage = () => {
@@ -81,6 +82,8 @@ export const DashboardPage = () => {
           }
         />
       </div>
+
+      <IngresosUltimosMeses />
 
       <div className="bg-gym-card border border-gym-border/80 rounded-2xl shadow-card-dark overflow-hidden">
         <div className="flex items-center justify-between gap-4 p-6 pb-4">

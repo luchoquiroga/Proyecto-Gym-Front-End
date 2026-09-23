@@ -93,10 +93,17 @@ la fecha como texto ISO, `new Date('2026-09-30')` se interpreta en UTC y en
 Argentina (UTC-3) puede mostrar el día anterior. `date-fns` con `parseISO` +
 `differenceInCalendarDays` lo resuelve y se lee.
 
-### 2.4 `recharts` — un solo gráfico
+### 2.4 `recharts` — un solo gráfico — DESCARTADO el 2026-09-23
 
 `GET /dashboard/ganancias-mensuales`, área ADMIN. Nada más. Si termina siendo
 una tabla y un número grande, se saca la dependencia.
+
+> **Se decidió no usarla** al llegar al paso 6 (decisión del dueño). El
+> gráfico es una sola serie de 12 columnas: un SVG propio
+> (`features/dashboard/components/GraficoIngresos.tsx`, ~200 líneas con
+> tooltip, foco por teclado y tabla alternativa) hace lo mismo sin sumar peso
+> a un bundle que ya pasa el aviso de 500 kB. Si algún día hace falta más de un
+> tipo de gráfico, se reabre acá.
 
 ### 2.5 `shadcn/ui` — componentes
 
@@ -142,6 +149,7 @@ Notas de la instalación (paso 7, 2026-09-23):
 | Next.js | No hay SEO ni SSR: todo está detrás de login. Y complicaría el shell de escritorio, que quiere una SPA estática servida por URL |
 | Redux / Redux Toolkit | El estado de servidor lo tiene react-query y el de sesión zustand. No queda estado global que justifique el boilerplate |
 | MUI / Chakra | Traen su propio sistema de tema y pelean con el Tailwind que ya está |
+| `recharts` | Un solo gráfico de una sola serie: lo hace un SVG propio (§2.4, 2026-09-23) |
 | `@tanstack/react-table` | Con paginación y orden del lado del servidor, solo guardaría la columna ordenada. Lo hace `lib/useOrden.ts` (§2.2, 2026-09-23) |
 | Cliente generado desde OpenAPI | El contrato es chico y quedó quieto después de las 8 fases. El costo del generador supera lo que ahorra |
 | `localStorage` para el access token | Decisión ya tomada y es correcta: token en RAM, sesión en cookie HttpOnly. **No se reabre** |
@@ -391,7 +399,7 @@ necesita, así el `package.json` siempre refleja algo que se usa:
 | 3 | Socios: crear / editar / inhabilitar | `react-hook-form` `zod` |
 | 4 | Listados paginados y búsqueda contra el servidor | ~~`@tanstack/react-table`~~ ninguna (§2.2) |
 | 5 | Cobrar, y portal del socio con los días restantes | `date-fns` |
-| 6 | Dashboard de ADMIN | `recharts` |
+| 6 | Dashboard de ADMIN | ~~`recharts`~~ ninguna (§2.4) |
 | 7 | Tests del interceptor y de los guards | `vitest` `@testing-library/react` `msw` |
 | 8 | Shell de escritorio | Tauri (repo aparte) |
 
@@ -403,7 +411,6 @@ Comandos, cuando toque cada paso:
 ```bash
 pnpm add react-hook-form zod @hookform/resolvers
 pnpm add date-fns
-pnpm add recharts
 pnpm add -D vitest @testing-library/react @testing-library/dom @testing-library/jest-dom jsdom msw
 pnpm dlx shadcn@latest init     # solo si se adopta shadcn
 ```

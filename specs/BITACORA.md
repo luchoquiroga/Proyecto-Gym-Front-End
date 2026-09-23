@@ -40,7 +40,7 @@ y son los que más deuda sacan.
 | 3 | Socios: crear / editar / inhabilitar | **hecho** (19/09) — W6, con `react-hook-form` + `zod` |
 | 4 | Listados paginados y búsqueda contra el servidor | **hecho** (23/09) — sin `react-table`, con `useOrden` |
 | 5 | Cobrar, y portal del socio con los días restantes | **hecho** (22/09) — W5 y W10 |
-| 6 | Dashboard de ADMIN | pendiente |
+| 6 | Dashboard de ADMIN | **hecho** (23/09) — gráfico en SVG propio, sin `recharts` |
 | 7 | Tests del interceptor y de los guards | **hecho** (23/09) — `pnpm test`, 31 tests |
 | 8 | Shell de escritorio (repo aparte) | pendiente |
 
@@ -76,6 +76,11 @@ y son los que más deuda sacan.
   19/09 para poder probar: el socio Charles Quiroga quedó **ACTIVO** con un pago
   de $35.000 (Pase Mensual, vence el 19/10/2026), y existe una cuenta de staff
   `gerencia` con rol GERENCIA. Son datos de una base descartable.
+- **Pedido para el backend: la serie de ganancias en una sola llamada.** El
+  gráfico del dashboard hace 12 peticiones a `ganancias-mensuales`, una por
+  mes. Anda y queda en cache, pero un `GET /dashboard/ganancias-por-mes?desde=&hasta=`
+  (o `?meses=12`) lo resolvería en una. Cuando exista, se cambia solo
+  `useGananciasDeMeses` en `features/dashboard/hooks.ts`.
 - **Pedido para el backend: `sort` con un campo inexistente devuelve 500.**
   Debería ser un 400 con mensaje. No rompe nada en la web —el front solo manda
   campos de una lista cerrada—, pero un 500 por un parámetro mal escrito
@@ -111,6 +116,34 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-23 (séptimo tramo)** — **Paso 6, el gráfico del dashboard.** Sin
+  dependencias: **`recharts` se descartó** (decisión del dueño; razones en
+  `STACK.md` §2.4).
+  - **Ingresos de los últimos 12 meses en columnas**, entre las tarjetas y la
+    tabla de socios. Se siguió el método del skill `dataviz`: forma primero
+    (magnitud en el tiempo, una serie → columnas), color al final y
+    **validado con su script** contra la superficie real de las tarjetas
+    (`#16161b`): el azul `#3987e5` pasa con 4.95:1. El rojo de la marca no se
+    usa para datos porque en esta UI significa error.
+  - **El mes en curso va rayado y con "en curso"**: todavía está sumando, y sin
+    esa marca parecería que la facturación se cayó. El rayado es la única
+    textura del gráfico y marca un estado, no decora.
+  - Tooltip por mes (el valor primero), foco por teclado, **clic abre el
+    desglose de ese mes en Pagos** (W13), una sola etiqueta directa en el
+    máximo, y **"Ver como tabla"** para que ningún valor dependa del mouse.
+  - **Datos**: 12 peticiones en paralelo a `ganancias-mensuales`
+    (`useGananciasDeMeses`), con la misma clave de cache que el resumen de
+    Pagos. **Si falla una, falla la serie entera** con su mensaje: un gráfico
+    con un hueco mentiría que ese mes no entró plata. Pedido de un endpoint
+    con la serie anotado en "Abierto".
+  - **Se miró renderizado** (capturas con Edge headless, con el CSS real del
+    build) y apareció un caso que el código no mostraba: un mes con $1.000 al
+    lado de uno con $1,5 M no se veía, igual que uno en cero. Ahora todo
+    valor mayor a cero mide al menos 2 px.
+  - `formatearPesosCompacto` a mano ("$35 mil", "$1,2 M"): el `compact` de
+    Intl en es-AR mezcla "K" y "k" y mete espacios.
+  - Verificado: `pnpm build`, `pnpm lint` y `pnpm test` (31) en verde.
 
 - **2026-09-23 (sexto tramo)** — **Paso 4, ordenar los listados contra el
   servidor.** Sin dependencias: **`@tanstack/react-table` se descartó**
