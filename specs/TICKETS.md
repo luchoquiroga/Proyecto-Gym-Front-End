@@ -331,7 +331,7 @@ cuidar.
 
 ---
 
-### W12 — Anular un pago cargado por error (solo ADMIN)
+### W12 — Anular un pago cargado por error (solo ADMIN) — HECHO el 2026-09-23
 
 Depende de F6.1. **No es un botón "eliminar":** el pago no desaparece, queda
 marcado como anulado con quién, cuándo y por qué. La UI tiene que reflejar eso o
@@ -348,7 +348,7 @@ va a generar la expectativa equivocada.
   al pago anterior.
 - GERENCIA no ve esta acción (403 del backend si la intenta).
 
-### W13 — Desglose de ganancias del mes (solo ADMIN)
+### W13 — Desglose de ganancias del mes (solo ADMIN) — HECHO el 2026-09-23
 
 El dashboard hoy muestra el total agregado de `/dashboard/ganancias-mensuales`.
 El alcance pide poder **abrir ese número**: ver los pagos que lo componen.

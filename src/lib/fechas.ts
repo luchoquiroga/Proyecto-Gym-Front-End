@@ -1,4 +1,4 @@
-import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns';
+import { addDays, differenceInCalendarDays, endOfMonth, format, parseISO } from 'date-fns';
 
 /**
  * Aritmética de fechas ISO sin hora (`2026-09-30`), que es como las manda y
@@ -20,3 +20,13 @@ export const sumarDias = (iso: string, dias: number): string =>
 /** Días de calendario de `desde` a `hasta`. Negativo si `hasta` es anterior. */
 export const diasEntre = (desde: string, hasta: string): number =>
   differenceInCalendarDays(parseISO(hasta), parseISO(desde));
+
+/**
+ * Primer y último día de un mes (`mes` de 1 a 12), en ISO. Es el mismo rango
+ * que usa el backend para `ganancias-mensuales`, así que el desglose y el total
+ * miran exactamente los mismos días (bisiestos incluidos).
+ */
+export const rangoDelMes = (anio: number, mes: number): { desde: string; hasta: string } => {
+  const primero = new Date(anio, mes - 1, 1);
+  return { desde: format(primero, FORMATO_ISO), hasta: format(endOfMonth(primero), FORMATO_ISO) };
+};

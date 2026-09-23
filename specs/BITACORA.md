@@ -49,6 +49,16 @@ y son los que más deuda sacan.
 - **Falta probar W10 a mano de punta a punta**: dar de alta un socio, activar
   la cuenta con el código, entrar, F5 en el portal (silent refresh contra
   `/clientes/refresh`) y que la sesión vencida mande a `/socio/ingresar`.
+- **Datos de prueba que quedaron en `gym_api_local`** (23/09): socios 4 a 7
+  (documentos `PRUEBA…`, `ESTADO…`, `CADENA…`, `CADMES…`). Los pagos #4, #5,
+  #8 y #10 están anulados. **#6 ($35.000), #7 ($1.000) y #9 ($35.000) siguen
+  válidos y suman al total de septiembre.**
+  Se dejan a propósito, por decisión del dueño. El socio 7 quedó INACTIVO por
+  el bug de arriba, antes del arreglo: el estado guardado no se corrige solo.
+- **Probar a mano W12 y W13** con la cuenta de admin: anular un pago (tiene
+  que quedar tachado y bajar el total del mes), intentar anular uno que tiene
+  otro encadenado después (tiene que mostrar el 400 que nombra al posterior),
+  y que el total de arriba coincida con el de la tarjeta del dashboard.
 - **Probar a mano la Fase 9 desde la web**: el cobro anticipado encadenado
   (Charles vence el 19/10: un mes cobrado hoy tiene que vencer el 18/11, no el
   23/10) y la tarjeta de socios activos, que cambia al dar de baja.
@@ -96,6 +106,44 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-23 (segundo tramo)** — **W12 (anular) y W13 (desglose del mes)**,
+  juntos porque son la misma pantalla. Sin dependencias nuevas.
+  - **Pagos pasó a ser el desglose de un mes** con un selector ‹ mes ›. El mes
+    y la página viven en la URL (`/staff/pagos?anio=2026&mes=9&pagina=0`): la
+    tarjeta "Ingresos del mes" del dashboard linkea al mes que sumó el backend,
+    y un F5 no te devuelve al mes en curso.
+  - **El total de arriba y la tabla coinciden por construcción, no porque el
+    front los sume.** Los dos filtran por `fechaPago` del primer al último día
+    del mes (`rangoDelMes` en `lib/fechas`). El total sale de
+    `ganancias-mensuales` —el mismo número del dashboard— y excluye los
+    anulados; la tabla los muestra tachados. Sumar la tabla en el navegador
+    daría el total de 20 filas, no del mes.
+  - **Orden**: `sort=fechaPago,desc&sort=id,desc`. Axios por defecto manda los
+    arrays como `sort[]=…`, que Spring **ignora sin avisar**; se usa
+    `paramsSerializer: { indexes: null }` en `listarPagos` (verificado con
+    `axios.getUri`).
+  - **Anular** (`ConfirmarAnulacion`): botón en cada fila válida, motivo
+    obligatorio de hasta 300 caracteres, y dice claro que no se borra nada. El
+    400 del pago encadenado (Fase 9) aparece arriba del formulario tal cual,
+    porque ya nombra al pago que hay que anular primero. Invalida socios, pagos
+    y dashboard: anular puede devolver al socio a su vencimiento anterior.
+  - La tabla se sacó a `TablaPagos.tsx`. Componentes nuevos: `SelectorDeMes`,
+    `ResumenDelMes` y `components/ui/CampoAreaTexto`. `TarjetaKpi` acepta un
+    `enlace` opcional.
+  - Verificado: `pnpm build` y `pnpm lint` en verde. **Contra el backend local
+    por API, 22/22**, con las cuentas `admin` y `gerencia`: el total del mes
+    coincide con la suma de los pagos válidos del listado (antes y después de
+    cobrar y anular); `sort=` ordena y `sort[]=` se ignora; motivo vacío y de
+    301 caracteres dan 400 con `errores.motivo`; anular con uno encadenado da
+    el 400 que nombra al posterior; los anulados se siguen listando; GERENCIA
+    recibe 403 en `/pagos`, en la anulación y en `/dashboard/socios`. De ahí
+    salió un bug del backend: **anular un pago dejaba INACTIVO a un socio
+    cubierto por otro pago válido** (dentro de la transacción de `anular`, el
+    recálculo no veía el pago vigente y caía en `orElse(INACTIVO)`).
+    Reproducido con pases diarios y mensuales; **arreglado en el backend en
+    `de3a0d8`**. No se volvió a correr la prueba desde el front después del
+    arreglo.
 
 - **2026-09-23** — **Adaptar la web a la Fase 9 del backend**, que resolvió los
   cinco pedidos B1–B5 (`api\specs\2026-09-23-fase9-pedidos-del-front.md`, §8

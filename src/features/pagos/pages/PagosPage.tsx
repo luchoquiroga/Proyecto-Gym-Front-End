@@ -1,105 +1,99 @@
 import { useState } from 'react';
-import { Ban, CreditCard } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { CreditCard } from 'lucide-react';
 import { EncabezadoPagina } from '../../../components/ui/EncabezadoPagina';
 import { Paginador } from '../../../components/ui/Paginador';
 import { Cargando, ErrorDeCarga, SinDatos } from '../../../components/estado/Estados';
-import { formatearFecha, formatearPesos } from '../../../lib/formato';
+import { hoyIso, rangoDelMes } from '../../../lib/fechas';
+import { nombreDeMes } from '../../../lib/formato';
 import { usePagos } from '../hooks';
+import { ConfirmarAnulacion } from '../components/ConfirmarAnulacion';
+import { ResumenDelMes } from '../components/ResumenDelMes';
+import { SelectorDeMes } from '../components/SelectorDeMes';
+import { TablaPagos } from '../components/TablaPagos';
+import type { PagoResponse } from '../types';
 
-const COLUMNAS = ['Recibo', 'Socio', 'Documento', 'Plan', 'Fecha', 'Cubre hasta', 'Monto'];
+/** Lo más nuevo arriba; el id desempata los cobros del mismo día. */
+const ORDEN = ['fechaPago,desc', 'id,desc'];
 
+const leerEntero = (valor: string | null, min: number, max: number): number | null => {
+  const numero = Number(valor);
+  return valor !== null && Number.isInteger(numero) && numero >= min && numero <= max ? numero : null;
+};
+
+/**
+ * Desglose de un mes: los pagos que componen el total del dashboard (W13), con
+ * la anulación en cada fila (W12). Solo ADMIN.
+ *
+ * El mes y la página viven en la URL (`?anio=2026&mes=9&pagina=0`): así la
+ * tarjeta del dashboard puede abrir un mes en particular, y un F5 no te
+ * devuelve al mes en curso.
+ */
 export const PagosPage = () => {
-  const [pagina, setPagina] = useState(0);
-  const { data, isLoading, isError, error, refetch } = usePagos({ page: pagina });
+  const [parametros, setParametros] = useSearchParams();
+  const [pagoAAnular, setPagoAAnular] = useState<PagoResponse | null>(null);
+
+  const [anioActual, mesActual] = hoyIso().split('-').map(Number);
+  const anio = leerEntero(parametros.get('anio'), 2000, 2100) ?? anioActual;
+  const mes = leerEntero(parametros.get('mes'), 1, 12) ?? mesActual;
+  const pagina = leerEntero(parametros.get('pagina'), 0, Number.MAX_SAFE_INTEGER) ?? 0;
+
+  const { desde, hasta } = rangoDelMes(anio, mes);
+  const { data, isLoading, isError, error, refetch } = usePagos({
+    page: pagina,
+    desde,
+    hasta,
+    sort: ORDEN,
+  });
+
+  const irA = (nuevoAnio: number, nuevoMes: number, nuevaPagina = 0) =>
+    setParametros({
+      anio: String(nuevoAnio),
+      mes: String(nuevoMes),
+      pagina: String(nuevaPagina),
+    });
 
   return (
     <div className="space-y-6">
       <EncabezadoPagina
         titulo="Pagos"
-        descripcion="Historial de cobros. El cobro se registra desde la ficha del socio."
+        descripcion="Los cobros de cada mes, uno por uno. Se cobra desde el listado de socios."
         icono={CreditCard}
-      />
+      >
+        <SelectorDeMes
+          anio={anio}
+          mes={mes}
+          anioActual={anioActual}
+          mesActual={mesActual}
+          onCambiar={irA}
+        />
+      </EncabezadoPagina>
 
       <div className="bg-gym-card border border-gym-border rounded-2xl overflow-hidden shadow-card-dark">
+        <ResumenDelMes anio={anio} mes={mes} />
+
         {isLoading ? (
           <Cargando texto="Trayendo pagos..." />
         ) : isError ? (
           <ErrorDeCarga error={error} onReintentar={() => refetch()} />
         ) : !data || data.contenido.length === 0 ? (
-          <SinDatos titulo="Todavía no hay pagos registrados" />
+          <SinDatos titulo={`No hay cobros en ${nombreDeMes(mes)} de ${anio}`} />
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-gym-border text-xs uppercase tracking-wider text-gym-muted bg-gym-dark/50">
-                    {COLUMNAS.map((columna) => (
-                      <th key={columna} className="py-4 px-6 font-semibold whitespace-nowrap">
-                        {columna}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gym-border/50">
-                  {data.contenido.map((pago) => (
-                    <tr
-                      key={pago.id}
-                      className={`transition-colors ${
-                        pago.anulado ? 'bg-gym-dark/60 text-gym-subtle' : 'hover:bg-gym-dark/40'
-                      }`}
-                    >
-                      <td className="py-4 px-6 font-mono text-xs text-gym-muted whitespace-nowrap">
-                        #{pago.id}
-                        {/* Un pago anulado se sigue mostrando, marcado. Esconderlo sería
-                            volver al borrado por la ventana. */}
-                        {pago.anulado && (
-                          <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-gym-red-950/70 text-gym-red-400 border border-gym-red-800/70">
-                            <Ban className="w-3 h-3" />
-                            Anulado
-                          </span>
-                        )}
-                      </td>
-                      <td
-                        className={`py-4 px-6 font-bold whitespace-nowrap ${
-                          pago.anulado ? 'line-through text-gym-muted' : 'text-white'
-                        }`}
-                      >
-                        {pago.cliente.nombre} {pago.cliente.apellido}
-                      </td>
-                      <td className="py-4 px-6 font-mono text-xs text-gym-muted whitespace-nowrap">
-                        {pago.cliente.documento}
-                      </td>
-                      <td className="py-4 px-6 text-gym-muted whitespace-nowrap">
-                        {pago.plan.nombre}
-                      </td>
-                      <td className="py-4 px-6 text-gym-muted whitespace-nowrap">
-                        {formatearFecha(pago.fechaPago)}
-                      </td>
-                      <td className="py-4 px-6 text-gym-muted whitespace-nowrap">
-                        {formatearFecha(pago.fechaVencimiento)}
-                      </td>
-                      <td
-                        className={`py-4 px-6 font-mono font-extrabold whitespace-nowrap ${
-                          pago.anulado ? 'line-through text-gym-subtle' : 'text-emerald-400'
-                        }`}
-                      >
-                        {formatearPesos(pago.montoAbonado)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
+            <TablaPagos pagos={data.contenido} onAnular={setPagoAAnular} />
             <Paginador
               pagina={data.pagina}
               totalPaginas={data.totalPaginas}
               totalElementos={data.totalElementos}
-              onCambiar={setPagina}
+              onCambiar={(nueva) => irA(anio, mes, nueva)}
             />
           </>
         )}
       </div>
+
+      {pagoAAnular && (
+        <ConfirmarAnulacion pago={pagoAAnular} onCerrar={() => setPagoAAnular(null)} />
+      )}
     </div>
   );
 };

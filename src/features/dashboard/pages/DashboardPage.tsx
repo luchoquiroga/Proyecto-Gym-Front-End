@@ -39,6 +39,16 @@ export const DashboardPage = () => {
           error={ganancias.isError ? ganancias.error : undefined}
           valor={ganancias.data ? formatearPesos(ganancias.data.totalGanancias) : null}
           detalle={mesEnCurso}
+          // El mes lo toma de la respuesta, no del reloj del navegador: el
+          // desglose abre exactamente el mes que el backend sumó.
+          enlace={
+            ganancias.data
+              ? {
+                  a: `/staff/pagos?anio=${ganancias.data.anio}&mes=${ganancias.data.mes}`,
+                  texto: 'Ver los pagos',
+                }
+              : undefined
+          }
         />
         <TarjetaKpi
           titulo="Cobros del mes"

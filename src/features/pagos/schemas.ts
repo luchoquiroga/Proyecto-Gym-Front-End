@@ -35,6 +35,22 @@ export const crearCobroSchema = (planes: Plan[]) =>
 
 export type CobroFormulario = z.infer<ReturnType<typeof crearCobroSchema>>;
 
+const LARGO_MAXIMO_MOTIVO = 300;
+
+/**
+ * Espejo de `AnulacionPagoRequest`. El motivo es obligatorio porque es lo que
+ * hace que conservar el pago anulado sirva como auditoría.
+ */
+export const anulacionSchema = z.object({
+  motivo: z
+    .string()
+    .trim()
+    .min(1, 'El motivo de la anulación es obligatorio')
+    .max(LARGO_MAXIMO_MOTIVO, `El motivo no puede superar los ${LARGO_MAXIMO_MOTIVO} caracteres`),
+});
+
+export type AnulacionFormulario = z.infer<typeof anulacionSchema>;
+
 /**
  * Qué va a pasar con el socio si se registra este cobro, con la misma regla que
  * el backend (Fase 9, B2). Sirve para AVISAR antes de confirmar, no para
