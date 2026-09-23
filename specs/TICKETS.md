@@ -171,7 +171,7 @@ Conviene renombrar las rutas `/admin/*` a algo neutro (`/staff/*`): dejarlas
 como están hace que la mitad de las pantallas de GERENCIA vivan bajo una URL que
 dice "admin".
 
-### W5 — Cobrar sin ver la tabla de pagos
+### W5 — Cobrar sin ver la tabla de pagos — HECHO el 2026-09-22
 
 Es el ticket que desbloquea el reemplazo del escritorio, y **no es mover una
 pantalla de lugar**: hoy el cobro vive dentro de la pantalla de pagos, que
@@ -185,7 +185,9 @@ Dos errores del backend que la pantalla tiene que mostrar bien:
 - **400 por monto menor al precio del plan.** No hay pago parcial: se rechaza
   entero y no se registra nada. El mensaje viene en `mensaje` del `ErrorResponse`
   y hay que mostrarlo tal cual, no un "error al guardar" genérico.
-- **400 por pago retroactivo ya vencido**: se registra pero no activa al socio.
+- ~~**400 por pago retroactivo ya vencido**: se registra pero no activa al socio.~~
+  **Corregido el 2026-09-22:** no es un 400, es un **201**. El pago se registra
+  y el socio no se activa. Mostrarlo como error haría que se cobre dos veces.
 
 La respuesta **no** trae quién cobró (`registradoPor` no está en `PagoResponse`,
 a propósito), así que no intentes mostrarlo.

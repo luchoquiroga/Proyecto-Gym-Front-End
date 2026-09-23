@@ -7,7 +7,7 @@ no coinciden, mandan ellos.
 
 Se actualiza **al terminar cada tramo**, no al final de todo.
 
-## Estado al 2026-09-19
+## Estado al 2026-09-22
 
 - **El backend está terminado** para el alcance definido: ocho fases de
   replanteo cerradas, sin superficie de más, desplegado en Render desde `master`
@@ -16,8 +16,8 @@ Se actualiza **al terminar cada tramo**, no al final de todo.
   están contra el contrato vigente (paginación, `documento`, `fechaVencimiento`,
   estados reales), no hay un solo `catch` con datos inventados, y el staff entra
   por dos áreas: mostrador (GERENCIA) y administración (ADMIN).
-- **Ya hay escrituras**: alta, edición y baja de socios (W6). Lo que falta para
-  cubrir el mostrador es **cobrar** (W5).
+- **El mostrador está cubierto**: alta, edición y baja de socios (W6) y
+  **cobrar** (W5), las dos probadas a mano contra el backend.
 - **El stack quedó decidido** el 2026-09-18 (`STACK.md`): se conserva lo que ya
   existe y se agrega de a una pieza por ticket. Los pasos 1 y 2 no agregaron
   ninguna dependencia, como estaba previsto.
@@ -31,20 +31,27 @@ y son los que más deuda sacan.
 
 | Paso | Qué cierra | Estado |
 |---|---|---|
-| 0 | `git init` + commit de la maqueta tal cual está, y los repos creados | `git init` y `remote` hechos por el dueño el 19/09; **falta el primer commit** |
+| 0 | `git init` + commit de la maqueta tal cual está, y los repos creados | **hecho** (`489cdb9`) |
 | 1 | **W1**: sacar los mocks de los `catch` + normalizar el error del backend | **hecho** (19/09), junto con W11 |
 | 2 | Los dos principals (`STACK.md` §5) + habilitar el área de GERENCIA | **hecho** (19/09), junto con W2, W3 y W4 |
 | 3 | Socios: crear / editar / inhabilitar | **hecho** (19/09) — W6, con `react-hook-form` + `zod` |
 | 4 | Listados paginados y búsqueda contra el servidor | pendiente |
-| 5 | Cobrar, y portal del socio con los días restantes | pendiente |
+| 5 | Cobrar, y portal del socio con los días restantes | **cobrar hecho** (22/09, W5, con `date-fns`); falta el portal (W10) |
 | 6 | Dashboard de ADMIN | pendiente |
 | 7 | Tests del interceptor y de los guards | pendiente |
 | 8 | Shell de escritorio (repo aparte) | pendiente |
 
-## Abierto al 2026-09-19
+## Abierto al 2026-09-22
 
-- **Falta el primer commit.** El repo tiene `git init` y `origin`, pero ningún
-  commit: hoy no hay a dónde volver si algo sale mal.
+- **Discutir en el backend: cobrar antes de tiempo hace perder días.** El
+  período nuevo arranca en `fechaPago` y no a continuación del vigente. Hoy la
+  web **avisa** cuántos días se superponen antes de confirmar, pero no lo
+  resuelve: la regla es del backend (`PagoServiceImpl.registrarPago`) y se
+  decide allá, no en el front.
+- **"Hoy" lo decide el navegador en el aviso y el servidor en el backend.** Si
+  el servidor corre en UTC (Render), entre las 21 y las 24 de Argentina ya es
+  "mañana" para él: el aviso de "pago ya vencido" podría diferir en un día en
+  ese caso borde. La fecha de pago que se manda es siempre la del navegador.
 - **Falta ver el área de GERENCIA con ojos.** El backend ya confirmó los
   permisos, pero nadie entró todavía a la web con esa cuenta: hay que mirar que
   la navegación no muestre Dashboard ni Pagos, y que entrar a `/staff/pagos` a
@@ -92,6 +99,38 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-22** — Paso 5, primera mitad: **W5, cobrar**. Dependencia nueva:
+  `date-fns`, la que `STACK.md` §7 tenía prevista para este paso, y por la
+  razón de §2.3 (restar fechas ISO sin el off-by-one de UTC-3).
+  - **Antes de escribir se leyó el backend** y salieron tres cosas que el
+    ticket no decía o decía mal: el retroactivo vencido es **201, no 400**
+    (corregido en `TICKETS.md` W5); el período nuevo **no se encadena** con el
+    vigente; y el vencimiento del socio es el **máximo** entre sus pagos. Las
+    tres quedaron en `CONTRATO-API.md` §3, Pagos.
+  - **El botón "Cobrar" está en cada fila del listado de socios**, para ADMIN
+    y GERENCIA, y también sobre un inactivo (es como vuelve). No está en la
+    pantalla de pagos porque GERENCIA no puede leer ningún pago.
+  - **El formulario** (`features/pagos/components/FormularioCobro.tsx`)
+    precarga el plan vigente del socio y el precio del plan elegido; al
+    cambiar de plan, el importe pasa a su precio. `zod` avisa el pago parcial
+    antes de viajar, pero el que decide es el 400 del backend, que se muestra
+    tal cual.
+  - **Antes de confirmar, dice qué va a pasar** (`preverCobro` en
+    `pagos/schemas.ts`, con las mismas reglas del backend): hasta cuándo queda
+    al día, cuántos días que ya había pagado se superponen, si el
+    vencimiento no cambia, o si el período ya terminó y no lo activa.
+  - **Después de cobrar, el comprobante se arma con la respuesta**, no con lo
+    tipeado. Si el pago no activa al socio, lo dice y avisa que no se vuelva a
+    cobrar.
+  - Invalida `['socios']`, `['pagos']` y `['dashboard']`, y espera a que se
+    refresquen antes de mostrar el comprobante: cuando se cierra, el listado ya
+    muestra el estado nuevo.
+  - Nuevo `components/ui/CampoSelect.tsx`, hermano de `CampoTexto`.
+  - Verificado: `pnpm build` y `pnpm lint` en verde. **Probado a mano por el
+    dueño contra el backend** el mismo día: el aviso de días superpuestos, la
+    reactivación de un inactivo, el pago parcial rechazado, el retroactivo
+    vencido y el cobro con la cuenta GERENCIA.
 
 - **2026-09-19 (segundo tramo)** — Paso 3: **W6, alta / edición / baja de
   socios**. Es la primera escritura de la web. Dependencias nuevas, las que

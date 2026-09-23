@@ -206,6 +206,15 @@ Reglas del backend que la UI tiene que respetar:
 - **Un pago no se edita ni se borra: se anula.** No existe `PUT` ni `DELETE` de
   pagos y no es un olvido. Corregir un importe = anular + volver a cobrar.
 - **`registrado_por` sale del token**, nunca del body. No lo mandes.
+- **`montoAbonado` es opcional**: si no va, el backend cobra el precio del plan.
+- **El período nuevo arranca en `fechaPago`, no a continuación del vigente**:
+  `fechaVencimiento = fechaPago + plan.duracion`. Cobrarle antes de tiempo a un
+  socio al día le hace perder los días que se superponen. El vencimiento del
+  socio es el **mayor** entre sus pagos válidos (verificado en
+  `PagoServiceImpl.registrarPago` y `PagoRepository`, 22/09).
+- **Un pago retroactivo cuyo período ya terminó responde 201, no 400**: se
+  registra, pero no activa al socio (solo activa si el vencimiento es posterior
+  a hoy). La UI no lo tiene que mostrar como error, o se cobra dos veces.
 - **GERENCIA cobra pero no lee ninguna lectura de pagos.** Si una pantalla de
   GERENCIA necesita saber si un socio está al día, usa `estado` +
   `fechaVencimiento` del socio, que no exponen plata.
