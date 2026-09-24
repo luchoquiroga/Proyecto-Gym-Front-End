@@ -495,3 +495,57 @@ campo en `mensaje`; un `sort` válido sigue ordenando; lo mismo en `/pagos` y
 
 **Impacto en el front.** Ninguno en el código. `CONTRATO-API.md` §3
 ("Paginación") cambia "un campo inexistente responde 500" por el 400.
+
+#### B8 — El backend detrás de la web publicada en Vercel (casi todo configuración)
+
+**Contexto.** Paso 8.0 (2026-09-24): la web se publica en **Vercel** y le pide
+el API **a su propio dominio**; `vercel.json` reenvía `/api/*` al backend en
+Render. Se eligió así, y no con web y API en dominios distintos, porque en ese
+caso la cookie de refresh es **de tercero** y Safari la bloquea: un socio con
+iPhone perdería la sesión con cada F5. Detrás del proxy la cookie queda del
+dominio de la web, que es lo que ya asumía `STACK.md` §6.
+
+**Lo que se verificó del código** (`UsuarioController.agregarCookieRefresh`,
+`application.properties`, `RateLimitFilter`): la cookie no fija `Domain` y usa
+`path=/`, así que detrás del proxy funciona sin cambios; `SameSite` y `Secure`
+ya salen de variables de entorno.
+
+Lo que se pide, de más urgente a menos:
+
+1. **Rate limit del login por IP: ya está roto hoy en producción.**
+   `RateLimitFilter` usa `request.getRemoteAddr()` y no lee `X-Forwarded-For`
+   (lo dice su propio comentario). Pero Render **ya es un proxy** delante de
+   la app, así que `getRemoteAddr()` es la IP del balanceador de Render: **todos
+   los usuarios comparten el mismo balde de 5 intentos por minuto**, y un socio
+   que se equivoca cinco veces le bloquea el login al mostrador. Con Vercel
+   delante sigue igual.
+   - Arreglo: tomar la IP del cliente de `X-Forwarded-For`.
+   - **Ojo con la falsificación**: el backend también se puede llamar directo
+     en `*.onrender.com`, salteando Vercel, y ahí el cliente puede mandar el
+     header que quiera. Hay que decidir de qué proxy se confía (qué posición
+     de la lista se toma) y dejarlo escrito. Aceptar esa limitación
+     documentada es una decisión válida para el tamaño de esta app; lo que no
+     es válido es el balde compartido de hoy.
+   - Tests: dos IPs distintas en `X-Forwarded-For` tienen baldes separados.
+2. **`CORS_ALLOWED_ORIGINS`**: agregar el origen de la web publicada
+   (`https://<proyecto>.vercel.app`, y el dominio propio si se usa), sin sacar
+   `http://localhost:5173`. Con el proxy el navegador no hace un pedido
+   cruzado, pero Vercel reenvía el header `Origin` y el filtro de CORS de
+   Spring rechaza un origen que no conoce con **403 "Invalid CORS request"**.
+   Si el login desde la web publicada da ese 403, es esto.
+3. **`REFRESH_COOKIE_SAMESITE=Lax`** (recomendado, solo variable de entorno).
+   `None` era para el caso cruzado. Con la web y el API en el mismo sitio,
+   `Lax` alcanza y suma protección contra CSRF. `REFRESH_COOKIE_SECURE` sigue
+   en `true`.
+4. **Cold start de Render (decisión del dueño).** En el plan gratis Render
+   duerme el servicio sin tráfico; medido el 24/09, **la primera petición tardó
+   más de 90 segundos**, y la siguiente 0,27 s. Detrás de Vercel esa primera
+   petición puede cortarse antes. El front ya lo muestra como "no se pudo
+   conectar" y reintentar funciona, pero la primera persona del día lo va a
+   ver. Opciones: un ping periódico a `/ping` (un cron externo cada ~10
+   minutos) o el plan pago de Render. Documentar la que se elija en
+   `DESPLIEGUE.md`.
+
+**Impacto en el front.** Ninguno en el código: ya está hecho del lado de la
+web (`vercel.json`, `VITE_API_URL` vacía en producción, proxy de Vite para
+`pnpm dev:prod`).

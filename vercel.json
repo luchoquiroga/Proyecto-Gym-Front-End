@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/api/:ruta*",
+      "destination": "https://proyecto-gym-back-end-java-spring.onrender.com/api/:ruta*"
+    },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

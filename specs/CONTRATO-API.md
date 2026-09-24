@@ -352,4 +352,9 @@ necesita, no se agrega un `fetch`: se abre la discusión en el repo del backend.
   tiene que correr en ese puerto**.
 - En producción la cookie de refresh sale `SameSite=None; Secure`, o sea que la
   web tiene que estar en **https** para que el silent refresh funcione.
+- **En producción la web no llama al API de Render directo** (paso 8.0,
+  2026-09-24): pide `/api/...` a su propio dominio y Vercel lo reenvía
+  (`vercel.json`). `VITE_API_URL` va vacía, y la cookie de refresh queda del
+  mismo sitio que la web, que es lo que la hace funcionar en Safari. Lo que el
+  backend tiene que configurar para esto está en `TICKETS.md` §6, **B8**.
 - Detalle completo: `api\specs\DESPLIEGUE.md`.

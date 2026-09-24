@@ -279,8 +279,14 @@ porque desde W6 la web escribe de verdad.
 | Cómo se arranca | Archivo | API | Base |
 |---|---|---|---|
 | `pnpm dev` | `.env.development` | `http://localhost:8080` | la que use el backend local |
-| `pnpm build` / `pnpm preview` | `.env.production` | Render | **Neon, producción** |
-| `pnpm dev:prod` | `.env.production` | Render | **Neon, producción** |
+| `pnpm build` / `pnpm preview` | `.env.production` (opcional) | `/api` relativo → el hosting lo reenvía a Render | **Neon, producción** |
+| `pnpm dev:prod` | `.env.production` | `/api` relativo → proxy de Vite (`API_PROXY_TARGET`) → Render | **Neon, producción** |
+
+**Los `.env` no están en el repo** (desde el 2026-09-24): cada máquina los arma
+copiando `.env.example`, que sí se sube y documenta cada variable. Ninguno tiene
+secretos, pero son configuración de cada entorno. Un build de producción anda
+**sin ninguna variable** (el caso de Vercel): `src/api/config.ts` usa el API
+relativo y el cartel "Producción" por defecto cuando el modo es producción.
 
 Del lado del backend (`C:\Users\lucia\IdeaProjects\api`):
 
@@ -378,6 +384,15 @@ minutos que sufre hoy la app Swing, que es justamente lo que se quiere dejar
 atrás. Cargando la URL real, el shell hereda el auth de la web sin escribir una
 línea de sesión.
 
+**Y la web misma tampoco llama al API cruzado** (decidido el 2026-09-24, paso
+8.0). Publicada en un dominio y con el API en otro, la cookie de refresh ya es
+de tercero *en el navegador*, antes de cualquier shell: Chrome y Edge hoy la
+aceptan, Safari no. Por eso la web se publica en **Vercel con un rewrite de
+`/api/*` al backend** (`vercel.json`) y `VITE_API_URL` va vacía en producción:
+para el navegador —y para el shell, que carga esa misma URL— el API es del
+mismo sitio. `pnpm dev:prod` reproduce lo mismo con el proxy de Vite
+(`API_PROXY_TARGET`, que no lleva `VITE_` y no va al bundle).
+
 Responsabilidad del shell, completa: ventana, ícono, título, auto-update, y que
 cerrar la ventana no mate la sesión. **Cero lógica de negocio, cero llamadas
 propias al API, cero superficie nueva.** Si algún día el shell necesita llamar al
@@ -432,7 +447,8 @@ pnpm dlx shadcn@latest init     # solo si se adopta shadcn
 
 - **shadcn/ui sí o no.** Recomendado, decisión del dueño. Afecta el paso 3 en
   adelante, no antes.
-- **Tauri vs Electron.** Recomendado Tauri; lo único que no es negociable es
-  cargar la URL, no empaquetar el SPA.
+- ~~**Tauri vs Electron.**~~ **Decidido el 2026-09-24: Tauri**, como se
+  recomendaba. Lo único que no es negociable sigue siendo cargar la URL, no
+  empaquetar el SPA.
 - **Prettier.** Hoy hay `oxlint` solo. Si el formateo empieza a ensuciar diffs,
   se agrega; no antes.

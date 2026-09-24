@@ -41,20 +41,52 @@ y son los que más deuda sacan.
 | 5 | Cobrar, y portal del socio con los días restantes | **hecho** (22/09) — W5 y W10 |
 | 6 | Dashboard de ADMIN | **hecho** (23/09) — gráfico en SVG propio, sin `recharts` |
 | 7 | Tests del interceptor y de los guards | **hecho** (23/09) — `pnpm test`, 31 tests |
-| 8 | Shell de escritorio (repo aparte) | pendiente |
+| 8 | Shell de escritorio (repo aparte) | **en curso** — 8.0 (publicar la web) preparado del lado del front |
 
-## Abierto al 2026-09-24
+## Abierto al 2026-09-24 (cierre del día)
 
-- **Paso 8, el escritorio**: sin empezar. Es un repo aparte (`STACK.md` §7).
-- **Pedido para el backend B6: la serie de ganancias en una sola llamada.**
-  Especificado en `TICKETS.md` §6 (`GET /dashboard/ganancias-por-mes`, totales
-  por mes con los ceros incluidos; no un endpoint de registros). Hoy el
-  gráfico hace 12 peticiones. Cuando exista, se cambia solo
-  `useGananciasDeMeses` en `features/dashboard/hooks.ts`.
-- **Pedido para el backend B7: `sort` con un campo inexistente devuelve 500**
-  en vez de 400. Especificado en `TICKETS.md` §6. No rompe nada en la web —el
-  front solo manda campos de una lista cerrada—, pero ensucia los logs y
-  esconde errores de verdad.
+**Para retomar, en este orden:**
+
+1. **Instalar Rust y las Build Tools de C++** (el dueño, el 25/09). Revisado el
+   24/09: WebView2 ya está (v153); faltan las dos cosas. Con `winget`:
+   ```
+   winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+   winget install --id Rustlang.Rustup
+   ```
+   Piden administrador y bajan varios GB. Después, **reabrir Claude Code** (para
+   el `PATH` nuevo) y confirmar con `cargo --version`.
+2. **Paso 8.2, el shell con Tauri**, apenas esté Rust. **No depende del
+   hosting**: repo nuevo `Gym-Escritorio` al lado de este, sin UI propia;
+   `devUrl` = `http://localhost:5173` (se prueba ya contra el backend local,
+   cuyo CORS acepta ese origen) y la URL de producción como un valor a
+   completar. La página cargada no recibe ningún permiso de Tauri. A probar:
+   login, recarga, y **cerrar y reabrir la app sin perder la sesión** (la
+   cookie de refresh tiene `Max-Age`, así que WebView2 la guarda en disco).
+3. **Cuando el backend entregue B6**: cambiar solo `useGananciasDeMeses`
+   (`features/dashboard/hooks.ts`) de 12 peticiones a una, y sumar el
+   endpoint a `CONTRATO-API.md`.
+4. **Cuando el backend entregue B7**: en `CONTRATO-API.md` §3 ("Paginación"),
+   cambiar "un campo inexistente responde 500" por el 400. Sin cambios de
+   código.
+
+**En manos de otros:**
+
+- **Backend**: el dueño le pasó **B6, B7 y B8** el 24/09, con la indicación de
+  hacer **de B8 solo el punto 1 (el rate limit)** por ahora. B8.1 no cambia
+  nada del front. Los puntos 2 a 4 de B8 (CORS con el dominio de la web,
+  `SameSite=Lax`, cold start) esperan al hosting.
+- **Hosting de la web: en pausa, lo decide el dueño del gimnasio** (si paga o
+  no). El lado del front del paso 8.0 ya está hecho (`vercel.json`, API
+  relativa en producción, proxy de Vite para `pnpm dev:prod`). Si se elige
+  otro proveedor, `vercel.json` se reemplaza por su equivalente de rewrite; el
+  resto sirve igual. Hasta que se decida quedan en espera **8.1** (probar la
+  sesión en la URL publicada) y **8.3** (el instalador, que lleva adentro la
+  URL de producción). El cold start de Render (>90 s medido en plan gratis)
+  es uno de los argumentos para esa charla.
+- **Commit y push del 8.0 y de esta bitácora**: los hace el dueño.
+
+**Siguen abiertos de antes:**
+
 - **Datos de prueba en `gym_api_local`** (base descartable), dejados a
   propósito por decisión del dueño:
   - socios 4 a 7 (documentos `PRUEBA…`, `ESTADO…`, `CADENA…`, `CADMES…`),
@@ -98,6 +130,51 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-24 (después del cierre)** — **Los `.env` salen del repo**, a pedido
+  del dueño. `.gitignore` ya los listaba pero no servía: estaban commiteados, y
+  git solo ignora lo que no sigue. Se sacaron del índice con `git rm --cached`
+  (siguen en disco) y `.gitignore` pasó a `.env` / `.env.*` con la excepción
+  `!.env.example`, que antes también se ignoraba y es justo la que tiene que
+  subirse. No tenían secretos (URLs públicas), así que no se reescribió el
+  historial.
+  - **Riesgo que esto abría y se cerró**: sin `.env.production` en el repo, el
+    build de Vercel habría salido apuntando a `localhost:8080`, roto y sin
+    avisar. Ahora `config.ts` usa por defecto, en modo producción, el API
+    relativo y el cartel "Producción". **Verificado compilando sin
+    `.env.production`**: `baseURL` vacío, sin `localhost:8080`, y el cartel
+    resuelto a "Producción" en el bundle. **En Vercel no hay que cargar
+    variables.**
+  - `.env.example` documenta todas las variables de los dos modos.
+    `STACK.md` §4.1 al día.
+
+- **2026-09-24 (cierre)** — Se ordenó lo que queda. El dueño **pausó la
+  publicación** para charlar con el dueño del gimnasio si conviene un hosting
+  pago, y le pasó al backend **B6, B7 y B8.1**. Se revisó la máquina para
+  Tauri: hay WebView2 y `winget`, faltan Rust y las Build Tools de C++ (se
+  instalan el 25/09). El 8.0 del front quedó hecho y sin commitear: lo
+  commitea y pushea el dueño. Próximo paso: el shell (8.2), que no depende del
+  hosting.
+
+- **2026-09-24 (segundo tramo)** — **Paso 8.0: preparar la web para
+  publicarse.** Decisiones del dueño: **Vercel con proxy** y **Tauri** para el
+  shell.
+  - **Hallazgo que ordenó el paso**: el shell carga la web *publicada*, y la
+    web no estaba publicada. Y publicada con el API en otro dominio, la cookie
+    de refresh ya es de tercero en el navegador: Safari la bloquea y un socio
+    con iPhone perdería la sesión con cada F5. Con el rewrite `/api/*` →
+    Render (`vercel.json`) la cookie queda del dominio de la web.
+  - `VITE_API_URL` vacía en producción, y `config.ts` pasó de `||` a `??`
+    (con `||` el string vacío caía en `localhost:8080`). Verificado en el
+    bundle: `baseURL` vacío en las dos instancias de axios, y ni la URL de
+    Render ni `localhost:8080` adentro.
+  - `pnpm dev:prod` sigue andando con un **proxy de Vite** (`API_PROXY_TARGET`
+    en `.env.production`, sin `VITE_`: no va al bundle). Probado en el puerto
+    5174 contra el backend real: el login inválido volvió el 401 de Render.
+  - **Del backend salieron dos cosas** (van en B8): el rate limit del login
+    comparte un solo balde entre todos los usuarios (ya hoy, por el proxy de
+    Render), y el **cold start** de Render tardó más de 90 s la primera vez.
+  - Verificado: `pnpm build`, `pnpm lint` y `pnpm test` (31) en verde.
 
 - **2026-09-24** — **Prueba en pantalla de toda la web**, hecha por el dueño
   contra el backend local, con la lista de nueve secciones. **Todo dio lo
