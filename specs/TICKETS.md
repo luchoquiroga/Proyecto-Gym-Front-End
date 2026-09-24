@@ -390,6 +390,162 @@ Los que aparecieron al escribir esto están especificados en
 - **F6.4** restringe `PATCH /clientes/{id}/estado`: la UI de socios no debe
   ofrecer "poner en ACTIVO" a mano.
 
-La cantidad de socios activos del dashboard (W9) **sigue sin endpoint** y no
-entró a la Fase 6: hasta que exista, esa tarjeta se saca en vez de calcularla
-mal en el navegador.
+La cantidad de socios activos del dashboard (W9) no entró a la Fase 6. **Se
+resolvió en la Fase 9** (`GET /dashboard/socios`, pedido B5) y la tarjeta
+volvió el 2026-09-23.
+
+### Pedidos del front después de la Fase 9
+
+B1–B5 se resolvieron en la Fase 9 del backend
+(`api\specs\2026-09-23-fase9-pedidos-del-front.md`).
+
+#### B6 — La serie de ganancias por mes en una sola llamada (solo ADMIN)
+
+**Por qué.** El gráfico de ingresos del dashboard (paso 6) muestra los últimos
+12 meses, y hoy lo arma con **12 peticiones** a `ganancias-mensuales`, una por
+mes. Funciona y queda en cache, pero es tráfico de más, y el front tiene que
+decidir qué pasa si falla una (hoy: falla la serie entera).
+
+**No es un endpoint de registros.** Uno de registros ya existe —
+`GET /pagos?desde=&hasta=`, que usa el desglose de W13— y no sirve para esto:
+traería cientos de pagos paginados para sumar 12 números, y la regla de qué
+cuenta como ingreso (sin anulados, por `fechaPago`) pasaría a vivir también en
+el front. Los totales los calcula el backend.
+
+**Contrato propuesto.**
+
+```
+GET /api/v1/dashboard/ganancias-por-mes?desde=2025-10&hasta=2026-09
+```
+
+```jsonc
+// 200 — una lista, un elemento por mes, del más viejo al más nuevo
+[
+  { "anio": 2025, "mes": 10, "totalGanancias": 420000, "cantidadPagos": 12 },
+  { "anio": 2025, "mes": 11, "totalGanancias": 0,      "cantidadPagos": 0  },
+  // ...
+  { "anio": 2026, "mes": 9,  "totalGanancias": 215000, "cantidadPagos": 6  }
+]
+```
+
+Reglas:
+
+- **Solo ADMIN.** Ya lo cubre la regla de ruta de `/api/v1/dashboard/**`;
+  GERENCIA y CLIENTE reciben 403.
+- **Cada elemento es un `GananciasMensualesResponse`**, el DTO que ya existe:
+  el front no cambia de tipos.
+- **Todos los meses del rango, también los que dan cero.** Si un mes sin
+  cobros no viene, el gráfico no puede distinguir "no hubo cobros" de "faltó
+  el dato". Rellenar los huecos es del backend.
+- **La misma regla que `ganancias-mensuales`**: sin anulados, por `fechaPago`
+  del primer al último día del mes. Idealmente las dos salen del mismo método
+  del service, para que un mes sume lo mismo en los dos endpoints.
+- **`desde` y `hasta` en formato `AAAA-MM`**, los dos inclusive. Sin
+  parámetros: los últimos 12 meses hasta el actual, con el "hoy" de Argentina
+  (el `Clock` de la Fase 9).
+- **400 con `mensaje`** si `desde` es posterior a `hasta`, si el formato no es
+  `AAAA-MM`, o si el rango pasa de un **tope** (sugerido: 24 meses). Sin tope,
+  alguien puede pedir cincuenta años.
+
+**Implementación.** Dos caminos válidos: un bucle en el service que reutilice
+el cálculo de un mes (12 consultas, pero dentro del servidor y sin duplicar la
+regla), o un solo `GROUP BY` año/mes. Con el volumen de un gimnasio alcanza el
+primero.
+
+**Tests sugeridos.** Un mes sin cobros viene en cero y no falta; un pago
+anulado no suma; la suma de un mes coincide con `ganancias-mensuales` de ese
+mes; rango invertido, mal formado y de más de 24 meses → 400; GERENCIA → 403.
+
+**Impacto en el front.** Cambia solo `useGananciasDeMeses` en
+`features/dashboard/hooks.ts`: de 12 consultas a una, y se va la lógica de
+"si falla una, falla todo". El gráfico, la tabla y los estados no cambian.
+`CONTRATO-API.md` se actualiza con el endpoint nuevo.
+
+#### B7 — `sort` con un campo inexistente responde 500 (debería ser 400)
+
+**Qué pasa.** Los listados paginados (`/clientes`, `/pagos`, `/usuarios`)
+reciben el `Pageable` de Spring, que acepta `?sort=campo,dir`. Con un campo que
+no existe en la entidad (`/clientes?sort=noExiste,asc`), el backend responde
+**500** "Ocurrió un error inesperado en el servidor". Verificado el 2026-09-23
+contra el backend local. Viene de la `PropertyReferenceException` de Spring
+Data, que el `GlobalExceptionHandler` no captura y termina en el handler
+genérico.
+
+**Por qué importa aunque la web no lo dispare.** El front solo manda campos de
+una lista cerrada (`ORDENABLES_*` en cada `api.ts`), así que la web no llega
+nunca a este caso. Pero un parámetro mal escrito es un error del que llama, no
+del servidor: un 500 ensucia los logs, dispara alertas que no son y esconde los
+500 de verdad. Y el escritorio o cualquier otro cliente puede mandarlo.
+
+**Qué se pide.**
+
+- **400 con `mensaje`** que nombre el campo, por ejemplo: "No se puede ordenar
+  por 'noExiste'". Mismo cuerpo que el resto (`ErrorResponse`).
+- Opcional, y mejor: una **lista blanca** de campos ordenables por endpoint,
+  para no exponer a través de `sort` nombres internos de la entidad (o
+  relaciones que disparen joins caros, como `cliente.pagos`).
+
+**Implementación.** Un `@ExceptionHandler(PropertyReferenceException.class)` en
+`GlobalExceptionHandler` que devuelva 400 alcanza para lo primero. La lista
+blanca, si se hace, va en cada controller o en un validador del `Pageable`.
+
+**Tests sugeridos.** `GET /clientes?sort=noExiste,asc` → 400 con el nombre del
+campo en `mensaje`; un `sort` válido sigue ordenando; lo mismo en `/pagos` y
+`/usuarios`.
+
+**Impacto en el front.** Ninguno en el código. `CONTRATO-API.md` §3
+("Paginación") cambia "un campo inexistente responde 500" por el 400.
+
+#### B8 — El backend detrás de la web publicada en Vercel (casi todo configuración)
+
+**Contexto.** Paso 8.0 (2026-09-24): la web se publica en **Vercel** y le pide
+el API **a su propio dominio**; `vercel.json` reenvía `/api/*` al backend en
+Render. Se eligió así, y no con web y API en dominios distintos, porque en ese
+caso la cookie de refresh es **de tercero** y Safari la bloquea: un socio con
+iPhone perdería la sesión con cada F5. Detrás del proxy la cookie queda del
+dominio de la web, que es lo que ya asumía `STACK.md` §6.
+
+**Lo que se verificó del código** (`UsuarioController.agregarCookieRefresh`,
+`application.properties`, `RateLimitFilter`): la cookie no fija `Domain` y usa
+`path=/`, así que detrás del proxy funciona sin cambios; `SameSite` y `Secure`
+ya salen de variables de entorno.
+
+Lo que se pide, de más urgente a menos:
+
+1. **Rate limit del login por IP: ya está roto hoy en producción.**
+   `RateLimitFilter` usa `request.getRemoteAddr()` y no lee `X-Forwarded-For`
+   (lo dice su propio comentario). Pero Render **ya es un proxy** delante de
+   la app, así que `getRemoteAddr()` es la IP del balanceador de Render: **todos
+   los usuarios comparten el mismo balde de 5 intentos por minuto**, y un socio
+   que se equivoca cinco veces le bloquea el login al mostrador. Con Vercel
+   delante sigue igual.
+   - Arreglo: tomar la IP del cliente de `X-Forwarded-For`.
+   - **Ojo con la falsificación**: el backend también se puede llamar directo
+     en `*.onrender.com`, salteando Vercel, y ahí el cliente puede mandar el
+     header que quiera. Hay que decidir de qué proxy se confía (qué posición
+     de la lista se toma) y dejarlo escrito. Aceptar esa limitación
+     documentada es una decisión válida para el tamaño de esta app; lo que no
+     es válido es el balde compartido de hoy.
+   - Tests: dos IPs distintas en `X-Forwarded-For` tienen baldes separados.
+2. **`CORS_ALLOWED_ORIGINS`**: agregar el origen de la web publicada
+   (`https://<proyecto>.vercel.app`, y el dominio propio si se usa), sin sacar
+   `http://localhost:5173`. Con el proxy el navegador no hace un pedido
+   cruzado, pero Vercel reenvía el header `Origin` y el filtro de CORS de
+   Spring rechaza un origen que no conoce con **403 "Invalid CORS request"**.
+   Si el login desde la web publicada da ese 403, es esto.
+3. **`REFRESH_COOKIE_SAMESITE=Lax`** (recomendado, solo variable de entorno).
+   `None` era para el caso cruzado. Con la web y el API en el mismo sitio,
+   `Lax` alcanza y suma protección contra CSRF. `REFRESH_COOKIE_SECURE` sigue
+   en `true`.
+4. **Cold start de Render (decisión del dueño).** En el plan gratis Render
+   duerme el servicio sin tráfico; medido el 24/09, **la primera petición tardó
+   más de 90 segundos**, y la siguiente 0,27 s. Detrás de Vercel esa primera
+   petición puede cortarse antes. El front ya lo muestra como "no se pudo
+   conectar" y reintentar funciona, pero la primera persona del día lo va a
+   ver. Opciones: un ping periódico a `/ping` (un cron externo cada ~10
+   minutos) o el plan pago de Render. Documentar la que se elija en
+   `DESPLIEGUE.md`.
+
+**Impacto en el front.** Ninguno en el código: ya está hecho del lado de la
+web (`vercel.json`, `VITE_API_URL` vacía en producción, proxy de Vite para
+`pnpm dev:prod`).

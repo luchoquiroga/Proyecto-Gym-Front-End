@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Banknote, Pencil, Search, UserMinus, UserPlus, Users } from 'lucide-react';
 import { EncabezadoPagina } from '../../../components/ui/EncabezadoPagina';
 import { Paginador } from '../../../components/ui/Paginador';
+import { Encabezado, EncabezadoOrdenable } from '../../../components/ui/EncabezadoOrdenable';
+import { useOrden } from '../../../lib/useOrden';
 import { Cargando, ErrorDeCarga, SinDatos } from '../../../components/estado/Estados';
 import { useDebounce } from '../../../lib/useDebounce';
 import { formatearFecha } from '../../../lib/formato';
@@ -9,13 +11,13 @@ import { EstadoSocioBadge } from '../components/EstadoSocioBadge';
 import { FormularioSocio } from '../components/FormularioSocio';
 import { AvisoCodigoActivacion } from '../components/AvisoCodigoActivacion';
 import { ConfirmarBaja } from '../components/ConfirmarBaja';
+import { ORDENABLES_SOCIOS } from '../api';
 import { useBuscarSocios, useSocios } from '../hooks';
 import type { Socio, SocioAltaResponse } from '../types';
 import { FormularioCobro } from '../../pagos/components/FormularioCobro';
 import { ComprobanteCobro } from '../../pagos/components/ComprobanteCobro';
 import type { PagoResponse } from '../../pagos/types';
 
-const COLUMNAS = ['Documento', 'Socio', 'Teléfono', 'Estado', 'Vence', 'Plan vigente', 'Acciones'];
 
 export const SociosPage = () => {
   const [pagina, setPagina] = useState(0);
@@ -32,7 +34,14 @@ export const SociosPage = () => {
 
   // La búsqueda le pega al endpoint del backend. Filtrar en memoria filtraría
   // solo la página actual y parecería que busca entre todos los socios.
-  const listado = useSocios(pagina);
+  // Por apellido, que es como se busca a alguien en un padrón.
+  const orden = useOrden(ORDENABLES_SOCIOS, { columna: 'socio', direccion: 'asc' });
+  const ordenarPor = (columna: keyof typeof ORDENABLES_SOCIOS) => {
+    orden.alternar(columna);
+    setPagina(0);
+  };
+
+  const listado = useSocios(pagina, undefined, orden.sort);
   const resultados = useBuscarSocios(busqueda);
 
   const consulta = buscando ? resultados : listado;
@@ -98,10 +107,21 @@ export const SociosPage = () => {
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-gym-border text-xs uppercase tracking-wider text-gym-muted bg-gym-dark/50">
-                    {COLUMNAS.map((columna) => (
-                      <th key={columna} className="py-4 px-6 font-semibold whitespace-nowrap">
-                        {columna}
-                      </th>
+                    {/* La búsqueda no se ordena: `/clientes/buscar` no acepta `sort`. */}
+                    <EncabezadoOrdenable
+                      etiqueta="Documento"
+                      direccion={orden.direccionDe('documento')}
+                      onOrdenar={() => ordenarPor('documento')}
+                      deshabilitado={buscando}
+                    />
+                    <EncabezadoOrdenable
+                      etiqueta="Socio"
+                      direccion={orden.direccionDe('socio')}
+                      onOrdenar={() => ordenarPor('socio')}
+                      deshabilitado={buscando}
+                    />
+                    {['Teléfono', 'Estado', 'Vence', 'Plan vigente', 'Acciones'].map((etiqueta) => (
+                      <Encabezado key={etiqueta} etiqueta={etiqueta} />
                     ))}
                   </tr>
                 </thead>
@@ -113,7 +133,9 @@ export const SociosPage = () => {
                         {socio.documento}
                       </td>
                       <td className="py-4 px-6 font-bold text-white whitespace-nowrap">
-                        {socio.nombre} {socio.apellido}
+                        {/* Apellido primero: el listado está ordenado por apellido, y
+                            con "Ana Pérez" el orden no se ve aunque esté. */}
+                        {socio.apellido}, {socio.nombre}
                         {socio.email && (
                           <span className="block text-[11px] font-normal text-gym-subtle">
                             {socio.email}

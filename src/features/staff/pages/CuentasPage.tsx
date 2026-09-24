@@ -4,6 +4,8 @@ import { EncabezadoPagina } from '../../../components/ui/EncabezadoPagina';
 import { Paginador } from '../../../components/ui/Paginador';
 import { Cargando, ErrorDeCarga, SinDatos } from '../../../components/estado/Estados';
 import { useStaff } from '../../../auth/sesion';
+import { useOrden } from '../../../lib/useOrden';
+import { ORDENABLES_CUENTAS, type ColumnaCuenta } from '../api';
 import { useCuentas } from '../hooks';
 import { ConfirmarCambioActivo } from '../components/ConfirmarCambioActivo';
 import { FormularioCuenta } from '../components/FormularioCuenta';
@@ -25,7 +27,14 @@ export const CuentasPage = () => {
   const [cuentaAResetear, setCuentaAResetear] = useState<CuentaStaff | null>(null);
 
   const staff = useStaff();
-  const { data, isLoading, isError, error, refetch } = useCuentas(pagina);
+  // Activas primero (`activo` desc), y las dadas de baja juntas al final, donde se reactivan.
+  const orden = useOrden(ORDENABLES_CUENTAS, { columna: 'estado', direccion: 'desc' });
+  const ordenarPor = (columna: ColumnaCuenta) => {
+    orden.alternar(columna);
+    setPagina(0);
+  };
+
+  const { data, isLoading, isError, error, refetch } = useCuentas(pagina, orden.sort);
 
   return (
     <div className="space-y-6">
@@ -57,6 +66,8 @@ export const CuentasPage = () => {
               idPropio={staff?.id ?? null}
               onCambiarActivo={setCuentaACambiar}
               onResetearContrasena={setCuentaAResetear}
+              direccionDe={orden.direccionDe}
+              onOrdenar={ordenarPor}
             />
             <Paginador
               pagina={data.pagina}

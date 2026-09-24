@@ -6,15 +6,14 @@ import { Paginador } from '../../../components/ui/Paginador';
 import { Cargando, ErrorDeCarga, SinDatos } from '../../../components/estado/Estados';
 import { hoyIso, rangoDelMes } from '../../../lib/fechas';
 import { nombreDeMes } from '../../../lib/formato';
+import { useOrden } from '../../../lib/useOrden';
+import { ORDENABLES_PAGOS, type ColumnaPago } from '../api';
 import { usePagos } from '../hooks';
 import { ConfirmarAnulacion } from '../components/ConfirmarAnulacion';
 import { ResumenDelMes } from '../components/ResumenDelMes';
 import { SelectorDeMes } from '../components/SelectorDeMes';
 import { TablaPagos } from '../components/TablaPagos';
 import type { PagoResponse } from '../types';
-
-/** Lo más nuevo arriba; el id desempata los cobros del mismo día. */
-const ORDEN = ['fechaPago,desc', 'id,desc'];
 
 const leerEntero = (valor: string | null, min: number, max: number): number | null => {
   const numero = Number(valor);
@@ -38,12 +37,15 @@ export const PagosPage = () => {
   const mes = leerEntero(parametros.get('mes'), 1, 12) ?? mesActual;
   const pagina = leerEntero(parametros.get('pagina'), 0, Number.MAX_SAFE_INTEGER) ?? 0;
 
+  // Lo más nuevo arriba; el id desempata los cobros del mismo día.
+  const orden = useOrden(ORDENABLES_PAGOS, { columna: 'fecha', direccion: 'desc' }, ['id,desc']);
+
   const { desde, hasta } = rangoDelMes(anio, mes);
   const { data, isLoading, isError, error, refetch } = usePagos({
     page: pagina,
     desde,
     hasta,
-    sort: ORDEN,
+    sort: orden.sort,
   });
 
   const irA = (nuevoAnio: number, nuevoMes: number, nuevaPagina = 0) =>
@@ -52,6 +54,12 @@ export const PagosPage = () => {
       mes: String(nuevoMes),
       pagina: String(nuevaPagina),
     });
+
+  // Con otro orden, la página 3 es otra cosa: se vuelve a la primera.
+  const ordenarPor = (columna: ColumnaPago) => {
+    orden.alternar(columna);
+    irA(anio, mes, 0);
+  };
 
   return (
     <div className="space-y-6">
@@ -80,7 +88,12 @@ export const PagosPage = () => {
           <SinDatos titulo={`No hay cobros en ${nombreDeMes(mes)} de ${anio}`} />
         ) : (
           <>
-            <TablaPagos pagos={data.contenido} onAnular={setPagoAAnular} />
+            <TablaPagos
+              pagos={data.contenido}
+              onAnular={setPagoAAnular}
+              direccionDe={orden.direccionDe}
+              onOrdenar={ordenarPor}
+            />
             <Paginador
               pagina={data.pagina}
               totalPaginas={data.totalPaginas}

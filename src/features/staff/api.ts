@@ -4,8 +4,17 @@ import type { CuentaRequest, CuentaStaff } from './types';
 
 /** Único lugar del front que conoce las rutas de cuentas de staff. Todas son solo ADMIN. */
 
+/** Por qué se puede ordenar, y a qué campos de la ENTIDAD `Usuario`. Lista cerrada. */
+export const ORDENABLES_CUENTAS = {
+  usuario: ['nombre'],
+  rol: ['rol', 'nombre'],
+  estado: ['activo', 'nombre'],
+} as const;
+
+export type ColumnaCuenta = keyof typeof ORDENABLES_CUENTAS;
+
 export interface CuentasQuery extends ParametrosPagina {
-  sort?: string[];
+  sort?: readonly string[];
 }
 
 /**

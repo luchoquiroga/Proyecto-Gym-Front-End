@@ -4,8 +4,26 @@ import type { Socio, SocioAltaResponse, SocioRequest } from './types';
 
 /** Único lugar del front que conoce las rutas y los DTOs de socios. */
 
-export const listarSocios = (params: ParametrosPagina) =>
-  api.get<PaginaResponse<Socio>>('/api/v1/clientes', { params }).then((r) => r.data);
+/**
+ * Por qué se puede ordenar el padrón, y a qué campos de la ENTIDAD `Cliente`.
+ * Lista cerrada: un campo que no existe hace que el backend responda 500.
+ * "Vence" y "Plan" no están porque se calculan de los pagos; "Estado" tampoco,
+ * porque la base lo ordenaría alfabético (ACTIVO, INACTIVO, MOROSO), que no le
+ * sirve a nadie.
+ */
+export const ORDENABLES_SOCIOS = {
+  documento: ['documento'],
+  socio: ['apellido', 'nombre'],
+} as const;
+
+/**
+ * `sort` en formato de Spring (`['apellido,asc', 'id,asc']`), con campos de la
+ * ENTIDAD. `indexes: null` manda `sort=a&sort=b`: con `sort[]=` Spring lo ignora.
+ */
+export const listarSocios = (params: ParametrosPagina & { sort?: readonly string[] }) =>
+  api
+    .get<PaginaResponse<Socio>>('/api/v1/clientes', { params, paramsSerializer: { indexes: null } })
+    .then((r) => r.data);
 
 /** Coincidencia parcial insensible a mayúsculas. Devuelve lista plana, sin paginar. */
 export const buscarSocios = (nombre: string) =>

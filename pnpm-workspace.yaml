@@ -1,2 +1,6 @@
+allowBuilds:
+  # El postinstall de msw solo copia el service worker para usarlo en el
+  # navegador; los tests corren en Node y no lo necesitan.
+  msw: false
 minimumReleaseAgeExclude:
   - postcss@8.5.28

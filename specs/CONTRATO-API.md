@@ -321,8 +321,14 @@ servicios se lo pasan tal cual al repositorio (verificado el 23/09). Dos cosas:
   `planVigente`**: se calculan a partir de los pagos y no son columnas de
   `clientes`. En pagos, `fechaPago`, `fechaVencimiento` y `montoAbonado`.
 - Sin `sort`, el orden es el de la base (en la práctica, por id), que no está
-  garantizado. Qué responde un campo inexistente no está verificado: no lo
-  mandes a ciegas desde un input del usuario.
+  garantizado.
+- **Un campo inexistente responde 500** (verificado el 23/09), no 400. Por eso
+  el front solo manda campos de una lista cerrada por listado
+  (`ORDENABLES_*` en el `api.ts` de cada feature), nunca algo que venga de un
+  input o de la URL.
+- Las propiedades anidadas funcionan (`sort=cliente.apellido,asc` en pagos), y
+  el orden de texto no distingue mayúsculas.
+- `/clientes/buscar` **no** acepta `sort`: es una lista plana.
 
 ---
 
@@ -346,4 +352,9 @@ necesita, no se agrega un `fetch`: se abre la discusión en el repo del backend.
   tiene que correr en ese puerto**.
 - En producción la cookie de refresh sale `SameSite=None; Secure`, o sea que la
   web tiene que estar en **https** para que el silent refresh funcione.
+- **En producción la web no llama al API de Render directo** (paso 8.0,
+  2026-09-24): pide `/api/...` a su propio dominio y Vercel lo reenvía
+  (`vercel.json`). `VITE_API_URL` va vacía, y la cookie de refresh queda del
+  mismo sitio que la web, que es lo que la hace funcionar en Safari. Lo que el
+  backend tiene que configurar para esto está en `TICKETS.md` §6, **B8**.
 - Detalle completo: `api\specs\DESPLIEGUE.md`.

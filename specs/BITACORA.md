@@ -7,25 +7,24 @@ no coinciden, mandan ellos.
 
 Se actualiza **al terminar cada tramo**, no al final de todo.
 
-## Estado al 2026-09-23
+## Estado al 2026-09-24
 
+- **La web está completa para el alcance definido y probada en pantalla.**
+  Los trece tickets de UI (W1–W13) están hechos, y los pasos 0 a 7 de
+  `STACK.md` §7 también. El 24/09 el dueño recorrió la web entera contra el
+  backend local (ver el historial) y todo dio lo esperado.
 - **El backend está terminado** para el alcance definido: nueve fases
-  cerradas (la 9 fueron los pedidos del front, B1–B5), sin superficie de más, desplegado en Render desde `master`
-  (migraciones V3–V7 ya corrieron). **No bloquea nada del front.**
-- **La web ya no miente ni le cierra la puerta a GERENCIA.** Las cuatro lecturas
-  están contra el contrato vigente (paginación, `documento`, `fechaVencimiento`,
-  estados reales), no hay un solo `catch` con datos inventados, y el staff entra
-  por dos áreas: mostrador (GERENCIA) y administración (ADMIN).
-- **El mostrador está cubierto**: alta, edición y baja de socios (W6) y
-  **cobrar** (W5), las dos probadas a mano contra el backend.
-- **El stack quedó decidido** el 2026-09-18 (`STACK.md`): se conserva lo que ya
-  existe y se agrega de a una pieza por ticket. Los pasos 1 y 2 no agregaron
-  ninguna dependencia, como estaba previsto.
-- **El portal del socio se puede alcanzar** (W10): login por email, registro
-  con el código de activación y días restantes. Falta probarlo a mano de punta
-  a punta.
-- **El escritorio no empezó** y no debería empezar hasta que la web cubra lo que
-  hoy hace la app Swing (o sea: hasta que GERENCIA pueda operar).
+  cerradas (la 9 fueron los pedidos del front, B1–B5), desplegado en Render
+  desde `master`. Quedan dos pedidos chicos que **no bloquean nada**: B6 y B7
+  (`TICKETS.md` §6).
+- **Las tres áreas funcionan**: mostrador (GERENCIA: socios y cobrar),
+  administración (ADMIN: además dashboard, pagos y cuentas de staff) y el
+  portal del socio (login, registro con código, días restantes).
+- **El stack se achicó respecto de lo planeado**: `@tanstack/react-table` y
+  `recharts` se descartaron (`STACK.md` §2.2 y §2.4); lo que hacían lo cubren
+  `lib/useOrden.ts` y un SVG propio. `pnpm test` corre 31 tests.
+- **El escritorio (paso 8) ya puede empezar**: la condición era que la web
+  cubriera lo que hace la app Swing, y la cubre.
 
 ## Pasos
 
@@ -38,46 +37,68 @@ y son los que más deuda sacan.
 | 1 | **W1**: sacar los mocks de los `catch` + normalizar el error del backend | **hecho** (19/09), junto con W11 |
 | 2 | Los dos principals (`STACK.md` §5) + habilitar el área de GERENCIA | **hecho** (19/09), junto con W2, W3 y W4 |
 | 3 | Socios: crear / editar / inhabilitar | **hecho** (19/09) — W6, con `react-hook-form` + `zod` |
-| 4 | Listados paginados y búsqueda contra el servidor | pendiente |
+| 4 | Listados paginados y búsqueda contra el servidor | **hecho** (23/09) — sin `react-table`, con `useOrden` |
 | 5 | Cobrar, y portal del socio con los días restantes | **hecho** (22/09) — W5 y W10 |
-| 6 | Dashboard de ADMIN | pendiente |
-| 7 | Tests del interceptor y de los guards | pendiente |
-| 8 | Shell de escritorio (repo aparte) | pendiente |
+| 6 | Dashboard de ADMIN | **hecho** (23/09) — gráfico en SVG propio, sin `recharts` |
+| 7 | Tests del interceptor y de los guards | **hecho** (23/09) — `pnpm test`, 31 tests |
+| 8 | Shell de escritorio (repo aparte) | **en curso** — 8.0 (publicar la web) preparado del lado del front |
 
-## Abierto al 2026-09-23
+## Abierto al 2026-09-24 (cierre del día)
 
-- **Falta probar W10 a mano de punta a punta**: dar de alta un socio, activar
-  la cuenta con el código, entrar, F5 en el portal (silent refresh contra
-  `/clientes/refresh`) y que la sesión vencida mande a `/socio/ingresar`.
-- **Cuenta de staff de prueba `prueba_w7`** (id 5, GERENCIA), dada de baja,
-  creada el 23/09 para probar W7. Su contraseña es `reseteada123`.
-- **Datos de prueba que quedaron en `gym_api_local`** (23/09): socios 4 a 7
-  (documentos `PRUEBA…`, `ESTADO…`, `CADENA…`, `CADMES…`). Los pagos #4, #5,
-  #8 y #10 están anulados. **#6 ($35.000), #7 ($1.000) y #9 ($35.000) siguen
-  válidos y suman al total de septiembre.**
-  Se dejan a propósito, por decisión del dueño. El socio 7 quedó INACTIVO por
-  el bug del estado al anular (ver el historial del 23/09, arreglado en el
-  backend en `de3a0d8`): el estado ya guardado no se corrige solo.
-- **Probar a mano W12 y W13** con la cuenta de admin: anular un pago (tiene
-  que quedar tachado y bajar el total del mes), intentar anular uno que tiene
-  otro encadenado después (tiene que mostrar el 400 que nombra al posterior),
-  y que el total de arriba coincida con el de la tarjeta del dashboard.
-- **Probar a mano la Fase 9 desde la web**: el cobro anticipado encadenado
-  (Charles vence el 19/10: un mes cobrado hoy tiene que vencer el 18/11, no el
-  23/10) y la tarjeta de socios activos, que cambia al dar de baja.
-- **Falta ver el área de GERENCIA con ojos.** El backend ya confirmó los
-  permisos, pero nadie entró todavía a la web con esa cuenta: hay que mirar que
-  la navegación no muestre Dashboard ni Pagos, y que entrar a `/staff/pagos` a
-  mano redirija en vez de romper.
-- **Falta probar la expiración del token** (esperar los 30 minutos o forzar un
-  401) para ver la cola del interceptor trabajando de verdad.
-- **Datos que quedaron en la base de pruebas** (`gym_api_local`), puestos el
-  19/09 para poder probar: el socio Charles Quiroga quedó **ACTIVO** con un pago
-  de $35.000 (Pase Mensual, vence el 19/10/2026), y existe una cuenta de staff
-  `gerencia` con rol GERENCIA. Son datos de una base descartable.
-- **Los listados todavía no mandan `sort`.** Ya está confirmado que el
-  backend lo acepta (`CONTRATO-API.md` §3, "Paginación", corregido el 23/09);
-  usarlo, por ejemplo por apellido en socios, es parte del paso 4.
+**Para retomar, en este orden:**
+
+1. **Instalar Rust y las Build Tools de C++** (el dueño, el 25/09). Revisado el
+   24/09: WebView2 ya está (v153); faltan las dos cosas. Con `winget`:
+   ```
+   winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+   winget install --id Rustlang.Rustup
+   ```
+   Piden administrador y bajan varios GB. Después, **reabrir Claude Code** (para
+   el `PATH` nuevo) y confirmar con `cargo --version`.
+2. **Paso 8.2, el shell con Tauri**, apenas esté Rust. **No depende del
+   hosting**: repo nuevo `Gym-Escritorio` al lado de este, sin UI propia;
+   `devUrl` = `http://localhost:5173` (se prueba ya contra el backend local,
+   cuyo CORS acepta ese origen) y la URL de producción como un valor a
+   completar. La página cargada no recibe ningún permiso de Tauri. A probar:
+   login, recarga, y **cerrar y reabrir la app sin perder la sesión** (la
+   cookie de refresh tiene `Max-Age`, así que WebView2 la guarda en disco).
+3. **Cuando el backend entregue B6**: cambiar solo `useGananciasDeMeses`
+   (`features/dashboard/hooks.ts`) de 12 peticiones a una, y sumar el
+   endpoint a `CONTRATO-API.md`.
+4. **Cuando el backend entregue B7**: en `CONTRATO-API.md` §3 ("Paginación"),
+   cambiar "un campo inexistente responde 500" por el 400. Sin cambios de
+   código.
+
+**En manos de otros:**
+
+- **Backend**: el dueño le pasó **B6, B7 y B8** el 24/09, con la indicación de
+  hacer **de B8 solo el punto 1 (el rate limit)** por ahora. B8.1 no cambia
+  nada del front. Los puntos 2 a 4 de B8 (CORS con el dominio de la web,
+  `SameSite=Lax`, cold start) esperan al hosting.
+- **Hosting de la web: en pausa, lo decide el dueño del gimnasio** (si paga o
+  no). El lado del front del paso 8.0 ya está hecho (`vercel.json`, API
+  relativa en producción, proxy de Vite para `pnpm dev:prod`). Si se elige
+  otro proveedor, `vercel.json` se reemplaza por su equivalente de rewrite; el
+  resto sirve igual. Hasta que se decida quedan en espera **8.1** (probar la
+  sesión en la URL publicada) y **8.3** (el instalador, que lleva adentro la
+  URL de producción). El cold start de Render (>90 s medido en plan gratis)
+  es uno de los argumentos para esa charla.
+- **Commit y push del 8.0 y de esta bitácora**: los hace el dueño.
+
+**Siguen abiertos de antes:**
+
+- **Datos de prueba en `gym_api_local`** (base descartable), dejados a
+  propósito por decisión del dueño:
+  - socios 4 a 7 (documentos `PRUEBA…`, `ESTADO…`, `CADENA…`, `CADMES…`),
+    creados el 23/09. Pagos anulados: #4, #5, #8 y #10. **#6 ($35.000), #7
+    ($1.000) y #9 ($35.000) siguen válidos y suman a septiembre.** El socio 7
+    quedó INACTIVO por el bug del estado al anular (arreglado en el backend en
+    `de3a0d8`): el estado ya guardado no se corrige solo;
+  - la cuenta de staff `prueba_w7` (id 5, GERENCIA), dada de baja, con
+    contraseña `reseteada123`;
+  - lo que el dueño cargó en la prueba en pantalla del 24/09 (un socio con
+    cuenta del portal, cobros y alguna anulación);
+  - de antes (19/09): el socio Charles Quiroga y la cuenta `gerencia`.
 - Se borró `src/pages/Home.tsx`: era código muerto de un tema anterior (ninguna
   ruta lo usaba y usaba colores que ya no existen en `tailwind.config.js`).
 
@@ -109,6 +130,152 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-24 (después del cierre)** — **Los `.env` salen del repo**, a pedido
+  del dueño. `.gitignore` ya los listaba pero no servía: estaban commiteados, y
+  git solo ignora lo que no sigue. Se sacaron del índice con `git rm --cached`
+  (siguen en disco) y `.gitignore` pasó a `.env` / `.env.*` con la excepción
+  `!.env.example`, que antes también se ignoraba y es justo la que tiene que
+  subirse. No tenían secretos (URLs públicas), así que no se reescribió el
+  historial.
+  - **Riesgo que esto abría y se cerró**: sin `.env.production` en el repo, el
+    build de Vercel habría salido apuntando a `localhost:8080`, roto y sin
+    avisar. Ahora `config.ts` usa por defecto, en modo producción, el API
+    relativo y el cartel "Producción". **Verificado compilando sin
+    `.env.production`**: `baseURL` vacío, sin `localhost:8080`, y el cartel
+    resuelto a "Producción" en el bundle. **En Vercel no hay que cargar
+    variables.**
+  - `.env.example` documenta todas las variables de los dos modos.
+    `STACK.md` §4.1 al día.
+
+- **2026-09-24 (cierre)** — Se ordenó lo que queda. El dueño **pausó la
+  publicación** para charlar con el dueño del gimnasio si conviene un hosting
+  pago, y le pasó al backend **B6, B7 y B8.1**. Se revisó la máquina para
+  Tauri: hay WebView2 y `winget`, faltan Rust y las Build Tools de C++ (se
+  instalan el 25/09). El 8.0 del front quedó hecho y sin commitear: lo
+  commitea y pushea el dueño. Próximo paso: el shell (8.2), que no depende del
+  hosting.
+
+- **2026-09-24 (segundo tramo)** — **Paso 8.0: preparar la web para
+  publicarse.** Decisiones del dueño: **Vercel con proxy** y **Tauri** para el
+  shell.
+  - **Hallazgo que ordenó el paso**: el shell carga la web *publicada*, y la
+    web no estaba publicada. Y publicada con el API en otro dominio, la cookie
+    de refresh ya es de tercero en el navegador: Safari la bloquea y un socio
+    con iPhone perdería la sesión con cada F5. Con el rewrite `/api/*` →
+    Render (`vercel.json`) la cookie queda del dominio de la web.
+  - `VITE_API_URL` vacía en producción, y `config.ts` pasó de `||` a `??`
+    (con `||` el string vacío caía en `localhost:8080`). Verificado en el
+    bundle: `baseURL` vacío en las dos instancias de axios, y ni la URL de
+    Render ni `localhost:8080` adentro.
+  - `pnpm dev:prod` sigue andando con un **proxy de Vite** (`API_PROXY_TARGET`
+    en `.env.production`, sin `VITE_`: no va al bundle). Probado en el puerto
+    5174 contra el backend real: el login inválido volvió el 401 de Render.
+  - **Del backend salieron dos cosas** (van en B8): el rate limit del login
+    comparte un solo balde entre todos los usuarios (ya hoy, por el proxy de
+    Render), y el **cold start** de Render tardó más de 90 s la primera vez.
+  - Verificado: `pnpm build`, `pnpm lint` y `pnpm test` (31) en verde.
+
+- **2026-09-24** — **Prueba en pantalla de toda la web**, hecha por el dueño
+  contra el backend local, con la lista de nueve secciones. **Todo dio lo
+  esperado**:
+  1. GERENCIA ve solo Socios y Planes, las rutas de ADMIN escritas a mano
+     redirigen, y cobra.
+  2. El cobro anticipado se encadena al vencimiento vigente, el listado se
+     actualiza sin recargar, y la fecha pasada avisa.
+  3. Socios arranca por apellido, los encabezados ordenan, y en la búsqueda no
+     se ofrecen.
+  4. Dashboard: gráfico, tooltip, clic al desglose, vista de tabla, y la
+     tarjeta de activos baja al dar de baja a alguien.
+  5. Pagos (W12/W13): total igual al del dashboard, meses, orden, anulación
+     con motivo, el 400 del encadenado, y el socio sigue ACTIVO si le queda
+     otro pago (el arreglo `de3a0d8` del backend).
+  6. Cuentas de staff (W7): alta, baja, "reactivala", reactivar y reset.
+  7. Cambiar la propia contraseña (W8): la actual mal no cierra la sesión; la
+     buena manda al login con aviso. `gerencia` quedó con `gerencia123`.
+  8. Portal del socio (W10) de punta a punta, en ventana privada.
+  9. F5, **la expiración del token a los 30 minutos** (un solo `/refresh`) y
+     el backend caído (cada pantalla dice que no pudo conectar).
+  - **Un solo hallazgo, de diseño**: el padrón estaba ordenado por apellido
+    pero mostraba "Ana Pérez", así que el orden no se notaba. Ahora Socios y
+    Pagos muestran **"Pérez, Ana"**; el resto de la web (modales,
+    comprobante, portal) sigue con el nombre primero.
+  - Además: pedido **B7** al backend en `TICKETS.md` §6 (el `sort` con un
+    campo inexistente da 500 porque `PropertyReferenceException` cae en el
+    handler genérico; verificado en `GlobalExceptionHandler`).
+
+- **2026-09-23 (séptimo tramo)** — **Paso 6, el gráfico del dashboard.** Sin
+  dependencias: **`recharts` se descartó** (decisión del dueño; razones en
+  `STACK.md` §2.4).
+  - **Ingresos de los últimos 12 meses en columnas**, entre las tarjetas y la
+    tabla de socios. Se siguió el método del skill `dataviz`: forma primero
+    (magnitud en el tiempo, una serie → columnas), color al final y
+    **validado con su script** contra la superficie real de las tarjetas
+    (`#16161b`): el azul `#3987e5` pasa con 4.95:1. El rojo de la marca no se
+    usa para datos porque en esta UI significa error.
+  - **El mes en curso va rayado y con "en curso"**: todavía está sumando, y sin
+    esa marca parecería que la facturación se cayó. El rayado es la única
+    textura del gráfico y marca un estado, no decora.
+  - Tooltip por mes (el valor primero), foco por teclado, **clic abre el
+    desglose de ese mes en Pagos** (W13), una sola etiqueta directa en el
+    máximo, y **"Ver como tabla"** para que ningún valor dependa del mouse.
+  - **Datos**: 12 peticiones en paralelo a `ganancias-mensuales`
+    (`useGananciasDeMeses`), con la misma clave de cache que el resumen de
+    Pagos. **Si falla una, falla la serie entera** con su mensaje: un gráfico
+    con un hueco mentiría que ese mes no entró plata. Pedido de un endpoint
+    con la serie anotado en "Abierto".
+  - **Se miró renderizado** (capturas con Edge headless, con el CSS real del
+    build) y apareció un caso que el código no mostraba: un mes con $1.000 al
+    lado de uno con $1,5 M no se veía, igual que uno en cero. Ahora todo
+    valor mayor a cero mide al menos 2 px.
+  - `formatearPesosCompacto` a mano ("$35 mil", "$1,2 M"): el `compact` de
+    Intl en es-AR mezcla "K" y "k" y mete espacios.
+  - Verificado: `pnpm build`, `pnpm lint` y `pnpm test` (31) en verde.
+
+- **2026-09-23 (sexto tramo)** — **Paso 4, ordenar los listados contra el
+  servidor.** Sin dependencias: **`@tanstack/react-table` se descartó**
+  (decisión del dueño; razones en `STACK.md` §2.2).
+  - `lib/useOrden.ts` guarda columna y dirección y arma el `sort` de Spring con
+    un **desempate por id** (sin él, dos filas iguales cambian de lugar entre
+    páginas y un socio puede aparecer en dos o en ninguna).
+    `components/ui/EncabezadoOrdenable.tsx` es el `<th>` clickeable, con
+    `aria-sort`.
+  - **Lista cerrada de columnas** por listado (`ORDENABLES_*` en cada
+    `api.ts`, que es donde vive lo que el backend acepta). Verificado contra el
+    backend: un campo inexistente da **500**, así que no se manda nada que no
+    esté en la lista.
+  - Socios arranca **por apellido** (antes salía en el orden de la base), y se
+    ordena por socio o documento. "Vence" y "Plan" no se ordenan porque se
+    calculan de los pagos; "Estado" tampoco, porque la base lo ordenaría
+    alfabético. En la búsqueda los encabezados no se ofrecen: `/buscar` no
+    acepta `sort`.
+  - Pagos se ordena por socio (`cliente.apellido`, anidado: verificado), fecha
+    o monto, y arranca por fecha descendente. Cuentas, por usuario, rol o
+    estado, y arranca con las activas primero.
+  - Cambiar el orden vuelve a la primera página.
+  - Verificado: `pnpm build`, `pnpm lint` y `pnpm test` (31) en verde; los
+    `sort` que arma cada listado se probaron contra el backend local.
+
+- **2026-09-23 (quinto tramo)** — **Paso 7, tests.** Dependencias nuevas, las
+  de `STACK.md` §7 más una que faltaba en el comando: `vitest`,
+  `@testing-library/react`, `@testing-library/dom` (par obligatoria),
+  `@testing-library/jest-dom`, `jsdom` y `msw`. Se corren con `pnpm test`.
+  - **El alcance es el de §2.6, ni más ni menos**: el interceptor (9 tests,
+    con `msw` en entorno Node), los guards (11) y los días hasta el
+    vencimiento (11).
+  - **Cada test se vio fallar**: se rompió a propósito el código que prueba y
+    se comprobó que el test lo detecta. Sin la cola del interceptor fallan 2;
+    si el refresh fallido no limpia la sesión, 1; si el guard ignora el rol,
+    2; con el vencimiento leído en UTC contra el "ahora" local, 8. Todo se
+    restauró y se verificó idéntico al commit.
+  - **Lo que se aprendió de eso**: la primera rotura de fechas (`new Date` en
+    las dos puntas de la resta) **no** era un bug: las dos fechas se corren
+    igual y la diferencia da bien. El off-by-one de verdad aparece al mezclar
+    una fecha leída en UTC con el "ahora" local. Se corrigió el comentario de
+    `lib/fechas.ts`, que lo explicaba mal.
+  - Zona horaria de los tests fijada a Argentina en `vite.config.ts`, para
+    que el borde de las 23:30 dé igual en cualquier máquina (y en un CI en
+    UTC).
 
 - **2026-09-23 (cuarto tramo)** — **W7, cuentas de staff**. Sin dependencias
   nuevas. Feature nueva `features/staff`, pantalla `/staff/cuentas` con el

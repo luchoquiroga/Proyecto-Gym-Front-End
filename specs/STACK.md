@@ -66,7 +66,16 @@ devolvió el servidor. La validación del cliente es **comodidad, nunca
 seguridad**: la fuente de verdad es el backend y se asume que puede rechazar
 algo que el front dio por bueno.
 
-### 2.2 `@tanstack/react-table` — listados
+### 2.2 `@tanstack/react-table` — listados — DESCARTADO el 2026-09-23
+
+> **Se decidió no usarla** al llegar al paso 4 (decisión del dueño). Con todo
+> del lado del servidor (paginación, orden y búsqueda), react-table en modo
+> manual no pagina, no ordena ni filtra: solo guardaría qué columna ordena y en
+> qué dirección. Eso lo hace `src/lib/useOrden.ts` en ~30 líneas, sin sumar una
+> API nueva (`columnHelper`, `flexRender`) a tablas que hoy se leen de corrido.
+> El razonamiento de abajo —**no ordenar ni filtrar en memoria**— sigue
+> vigente y es lo que implementa `useOrden`. Se deja el texto original.
+
 
 Socios y pagos son listas largas. **El backend ya pagina, ordena y busca del
 lado servidor** (Fase 3: `/clientes` paginado, `/clientes/buscar`, `/pagos` con
@@ -84,10 +93,17 @@ la fecha como texto ISO, `new Date('2026-09-30')` se interpreta en UTC y en
 Argentina (UTC-3) puede mostrar el día anterior. `date-fns` con `parseISO` +
 `differenceInCalendarDays` lo resuelve y se lee.
 
-### 2.4 `recharts` — un solo gráfico
+### 2.4 `recharts` — un solo gráfico — DESCARTADO el 2026-09-23
 
 `GET /dashboard/ganancias-mensuales`, área ADMIN. Nada más. Si termina siendo
 una tabla y un número grande, se saca la dependencia.
+
+> **Se decidió no usarla** al llegar al paso 6 (decisión del dueño). El
+> gráfico es una sola serie de 12 columnas: un SVG propio
+> (`features/dashboard/components/GraficoIngresos.tsx`, ~200 líneas con
+> tooltip, foco por teclado y tabla alternativa) hace lo mismo sin sumar peso
+> a un bundle que ya pasa el aviso de 500 kB. Si algún día hace falta más de un
+> tipo de gráfico, se reabre acá.
 
 ### 2.5 `shadcn/ui` — componentes
 
@@ -118,6 +134,14 @@ se ven mirando la pantalla:
 `msw` (Mock Service Worker) para los dos primeros: intercepta a nivel red, así
 el interceptor se ejercita de verdad en vez de mockear axios.
 
+Notas de la instalación (paso 7, 2026-09-23):
+- `@testing-library/dom` es dependencia **par obligatoria** de
+  `@testing-library/react` 16: sin ella no corre. El comando de §7 la incluye.
+- El script de instalación de `msw` está en `false` en `pnpm-workspace.yaml`:
+  solo copia el service worker para el navegador, y acá `msw` corre en Node.
+- La zona horaria de los tests está fijada a Argentina (`test.env.TZ` en
+  `vite.config.ts`), porque el test de fechas prueba el borde de medianoche.
+
 ### 2.7 Lo que NO se usa
 
 | Descartado | Por qué |
@@ -125,6 +149,8 @@ el interceptor se ejercita de verdad en vez de mockear axios.
 | Next.js | No hay SEO ni SSR: todo está detrás de login. Y complicaría el shell de escritorio, que quiere una SPA estática servida por URL |
 | Redux / Redux Toolkit | El estado de servidor lo tiene react-query y el de sesión zustand. No queda estado global que justifique el boilerplate |
 | MUI / Chakra | Traen su propio sistema de tema y pelean con el Tailwind que ya está |
+| `recharts` | Un solo gráfico de una sola serie: lo hace un SVG propio (§2.4, 2026-09-23) |
+| `@tanstack/react-table` | Con paginación y orden del lado del servidor, solo guardaría la columna ordenada. Lo hace `lib/useOrden.ts` (§2.2, 2026-09-23) |
 | Cliente generado desde OpenAPI | El contrato es chico y quedó quieto después de las 8 fases. El costo del generador supera lo que ahorra |
 | `localStorage` para el access token | Decisión ya tomada y es correcta: token en RAM, sesión en cookie HttpOnly. **No se reabre** |
 
@@ -253,8 +279,14 @@ porque desde W6 la web escribe de verdad.
 | Cómo se arranca | Archivo | API | Base |
 |---|---|---|---|
 | `pnpm dev` | `.env.development` | `http://localhost:8080` | la que use el backend local |
-| `pnpm build` / `pnpm preview` | `.env.production` | Render | **Neon, producción** |
-| `pnpm dev:prod` | `.env.production` | Render | **Neon, producción** |
+| `pnpm build` / `pnpm preview` | `.env.production` (opcional) | `/api` relativo → el hosting lo reenvía a Render | **Neon, producción** |
+| `pnpm dev:prod` | `.env.production` | `/api` relativo → proxy de Vite (`API_PROXY_TARGET`) → Render | **Neon, producción** |
+
+**Los `.env` no están en el repo** (desde el 2026-09-24): cada máquina los arma
+copiando `.env.example`, que sí se sube y documenta cada variable. Ninguno tiene
+secretos, pero son configuración de cada entorno. Un build de producción anda
+**sin ninguna variable** (el caso de Vercel): `src/api/config.ts` usa el API
+relativo y el cartel "Producción" por defecto cuando el modo es producción.
 
 Del lado del backend (`C:\Users\lucia\IdeaProjects\api`):
 
@@ -352,6 +384,15 @@ minutos que sufre hoy la app Swing, que es justamente lo que se quiere dejar
 atrás. Cargando la URL real, el shell hereda el auth de la web sin escribir una
 línea de sesión.
 
+**Y la web misma tampoco llama al API cruzado** (decidido el 2026-09-24, paso
+8.0). Publicada en un dominio y con el API en otro, la cookie de refresh ya es
+de tercero *en el navegador*, antes de cualquier shell: Chrome y Edge hoy la
+aceptan, Safari no. Por eso la web se publica en **Vercel con un rewrite de
+`/api/*` al backend** (`vercel.json`) y `VITE_API_URL` va vacía en producción:
+para el navegador —y para el shell, que carga esa misma URL— el API es del
+mismo sitio. `pnpm dev:prod` reproduce lo mismo con el proxy de Vite
+(`API_PROXY_TARGET`, que no lleva `VITE_` y no va al bundle).
+
 Responsabilidad del shell, completa: ventana, ícono, título, auto-update, y que
 cerrar la ventana no mate la sesión. **Cero lógica de negocio, cero llamadas
 propias al API, cero superficie nueva.** Si algún día el shell necesita llamar al
@@ -371,9 +412,9 @@ necesita, así el `package.json` siempre refleja algo que se usa:
 | 1 | **W1**: sacar los mocks de los `catch` + normalizar el error | ninguna |
 | 2 | Los dos principals (§5) + habilitar GERENCIA | ninguna |
 | 3 | Socios: crear / editar / inhabilitar | `react-hook-form` `zod` |
-| 4 | Listados paginados y búsqueda contra el servidor | `@tanstack/react-table` |
+| 4 | Listados paginados y búsqueda contra el servidor | ~~`@tanstack/react-table`~~ ninguna (§2.2) |
 | 5 | Cobrar, y portal del socio con los días restantes | `date-fns` |
-| 6 | Dashboard de ADMIN | `recharts` |
+| 6 | Dashboard de ADMIN | ~~`recharts`~~ ninguna (§2.4) |
 | 7 | Tests del interceptor y de los guards | `vitest` `@testing-library/react` `msw` |
 | 8 | Shell de escritorio | Tauri (repo aparte) |
 
@@ -384,10 +425,8 @@ Comandos, cuando toque cada paso:
 
 ```bash
 pnpm add react-hook-form zod @hookform/resolvers
-pnpm add @tanstack/react-table
 pnpm add date-fns
-pnpm add recharts
-pnpm add -D vitest @testing-library/react @testing-library/jest-dom jsdom msw
+pnpm add -D vitest @testing-library/react @testing-library/dom @testing-library/jest-dom jsdom msw
 pnpm dlx shadcn@latest init     # solo si se adopta shadcn
 ```
 
@@ -408,7 +447,8 @@ pnpm dlx shadcn@latest init     # solo si se adopta shadcn
 
 - **shadcn/ui sí o no.** Recomendado, decisión del dueño. Afecta el paso 3 en
   adelante, no antes.
-- **Tauri vs Electron.** Recomendado Tauri; lo único que no es negociable es
-  cargar la URL, no empaquetar el SPA.
+- ~~**Tauri vs Electron.**~~ **Decidido el 2026-09-24: Tauri**, como se
+  recomendaba. Lo único que no es negociable sigue siendo cargar la URL, no
+  empaquetar el SPA.
 - **Prettier.** Hoy hay `oxlint` solo. Si el formateo empieza a ensuciar diffs,
   se agrega; no antes.
