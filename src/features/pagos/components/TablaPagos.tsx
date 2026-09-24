@@ -63,7 +63,8 @@ export const TablaPagos = ({ pagos, onAnular, direccionDe, onOrdenar }: TablaPag
                   pago.anulado ? 'line-through text-gym-muted' : 'text-white'
                 }`}
               >
-                {pago.cliente.nombre} {pago.cliente.apellido}
+                {/* Apellido primero, como en Socios: la columna ordena por apellido. */}
+                {pago.cliente.apellido}, {pago.cliente.nombre}
               </td>
               {/* El documento es lo que distingue a dos homónimos: sin él, sería
                   imposible saber a cuál de los dos hay que anularle el pago. */}

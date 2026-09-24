@@ -7,25 +7,24 @@ no coinciden, mandan ellos.
 
 Se actualiza **al terminar cada tramo**, no al final de todo.
 
-## Estado al 2026-09-23
+## Estado al 2026-09-24
 
+- **La web está completa para el alcance definido y probada en pantalla.**
+  Los trece tickets de UI (W1–W13) están hechos, y los pasos 0 a 7 de
+  `STACK.md` §7 también. El 24/09 el dueño recorrió la web entera contra el
+  backend local (ver el historial) y todo dio lo esperado.
 - **El backend está terminado** para el alcance definido: nueve fases
-  cerradas (la 9 fueron los pedidos del front, B1–B5), sin superficie de más, desplegado en Render desde `master`
-  (migraciones V3–V7 ya corrieron). **No bloquea nada del front.**
-- **La web ya no miente ni le cierra la puerta a GERENCIA.** Las cuatro lecturas
-  están contra el contrato vigente (paginación, `documento`, `fechaVencimiento`,
-  estados reales), no hay un solo `catch` con datos inventados, y el staff entra
-  por dos áreas: mostrador (GERENCIA) y administración (ADMIN).
-- **El mostrador está cubierto**: alta, edición y baja de socios (W6) y
-  **cobrar** (W5), las dos probadas a mano contra el backend.
-- **El stack quedó decidido** el 2026-09-18 (`STACK.md`): se conserva lo que ya
-  existe y se agrega de a una pieza por ticket. Los pasos 1 y 2 no agregaron
-  ninguna dependencia, como estaba previsto.
-- **El portal del socio se puede alcanzar** (W10): login por email, registro
-  con el código de activación y días restantes. Falta probarlo a mano de punta
-  a punta.
-- **El escritorio no empezó** y no debería empezar hasta que la web cubra lo que
-  hoy hace la app Swing (o sea: hasta que GERENCIA pueda operar).
+  cerradas (la 9 fueron los pedidos del front, B1–B5), desplegado en Render
+  desde `master`. Quedan dos pedidos chicos que **no bloquean nada**: B6 y B7
+  (`TICKETS.md` §6).
+- **Las tres áreas funcionan**: mostrador (GERENCIA: socios y cobrar),
+  administración (ADMIN: además dashboard, pagos y cuentas de staff) y el
+  portal del socio (login, registro con código, días restantes).
+- **El stack se achicó respecto de lo planeado**: `@tanstack/react-table` y
+  `recharts` se descartaron (`STACK.md` §2.2 y §2.4); lo que hacían lo cubren
+  `lib/useOrden.ts` y un SVG propio. `pnpm test` corre 31 tests.
+- **El escritorio (paso 8) ya puede empezar**: la condición era que la web
+  cubriera lo que hace la app Swing, y la cubre.
 
 ## Pasos
 
@@ -44,47 +43,30 @@ y son los que más deuda sacan.
 | 7 | Tests del interceptor y de los guards | **hecho** (23/09) — `pnpm test`, 31 tests |
 | 8 | Shell de escritorio (repo aparte) | pendiente |
 
-## Abierto al 2026-09-23
+## Abierto al 2026-09-24
 
-- **Falta probar W10 a mano de punta a punta**: dar de alta un socio, activar
-  la cuenta con el código, entrar, F5 en el portal (silent refresh contra
-  `/clientes/refresh`) y que la sesión vencida mande a `/socio/ingresar`.
-- **Cuenta de staff de prueba `prueba_w7`** (id 5, GERENCIA), dada de baja,
-  creada el 23/09 para probar W7. Su contraseña es `reseteada123`.
-- **Datos de prueba que quedaron en `gym_api_local`** (23/09): socios 4 a 7
-  (documentos `PRUEBA…`, `ESTADO…`, `CADENA…`, `CADMES…`). Los pagos #4, #5,
-  #8 y #10 están anulados. **#6 ($35.000), #7 ($1.000) y #9 ($35.000) siguen
-  válidos y suman al total de septiembre.**
-  Se dejan a propósito, por decisión del dueño. El socio 7 quedó INACTIVO por
-  el bug del estado al anular (ver el historial del 23/09, arreglado en el
-  backend en `de3a0d8`): el estado ya guardado no se corrige solo.
-- **Probar a mano W12 y W13** con la cuenta de admin: anular un pago (tiene
-  que quedar tachado y bajar el total del mes), intentar anular uno que tiene
-  otro encadenado después (tiene que mostrar el 400 que nombra al posterior),
-  y que el total de arriba coincida con el de la tarjeta del dashboard.
-- **Probar a mano la Fase 9 desde la web**: el cobro anticipado encadenado
-  (Charles vence el 19/10: un mes cobrado hoy tiene que vencer el 18/11, no el
-  23/10) y la tarjeta de socios activos, que cambia al dar de baja.
-- **Falta ver el área de GERENCIA con ojos.** El backend ya confirmó los
-  permisos, pero nadie entró todavía a la web con esa cuenta: hay que mirar que
-  la navegación no muestre Dashboard ni Pagos, y que entrar a `/staff/pagos` a
-  mano redirija en vez de romper.
-- **La expiración del token ya tiene test automático** (paso 7: un solo
-  refresh, la cola, el refresh fallido), pero falta verla una vez en el
-  navegador contra el backend real, esperando los 30 minutos.
-- **Datos que quedaron en la base de pruebas** (`gym_api_local`), puestos el
-  19/09 para poder probar: el socio Charles Quiroga quedó **ACTIVO** con un pago
-  de $35.000 (Pase Mensual, vence el 19/10/2026), y existe una cuenta de staff
-  `gerencia` con rol GERENCIA. Son datos de una base descartable.
+- **Paso 8, el escritorio**: sin empezar. Es un repo aparte (`STACK.md` §7).
 - **Pedido para el backend B6: la serie de ganancias en una sola llamada.**
   Especificado en `TICKETS.md` §6 (`GET /dashboard/ganancias-por-mes`, totales
   por mes con los ceros incluidos; no un endpoint de registros). Hoy el
   gráfico hace 12 peticiones. Cuando exista, se cambia solo
   `useGananciasDeMeses` en `features/dashboard/hooks.ts`.
-- **Pedido para el backend: `sort` con un campo inexistente devuelve 500.**
-  Debería ser un 400 con mensaje. No rompe nada en la web —el front solo manda
-  campos de una lista cerrada—, pero un 500 por un parámetro mal escrito
-  ensucia los logs y esconde errores de verdad.
+- **Pedido para el backend B7: `sort` con un campo inexistente devuelve 500**
+  en vez de 400. Especificado en `TICKETS.md` §6. No rompe nada en la web —el
+  front solo manda campos de una lista cerrada—, pero ensucia los logs y
+  esconde errores de verdad.
+- **Datos de prueba en `gym_api_local`** (base descartable), dejados a
+  propósito por decisión del dueño:
+  - socios 4 a 7 (documentos `PRUEBA…`, `ESTADO…`, `CADENA…`, `CADMES…`),
+    creados el 23/09. Pagos anulados: #4, #5, #8 y #10. **#6 ($35.000), #7
+    ($1.000) y #9 ($35.000) siguen válidos y suman a septiembre.** El socio 7
+    quedó INACTIVO por el bug del estado al anular (arreglado en el backend en
+    `de3a0d8`): el estado ya guardado no se corrige solo;
+  - la cuenta de staff `prueba_w7` (id 5, GERENCIA), dada de baja, con
+    contraseña `reseteada123`;
+  - lo que el dueño cargó en la prueba en pantalla del 24/09 (un socio con
+    cuenta del portal, cobros y alguna anulación);
+  - de antes (19/09): el socio Charles Quiroga y la cuenta `gerencia`.
 - Se borró `src/pages/Home.tsx`: era código muerto de un tema anterior (ninguna
   ruta lo usaba y usaba colores que ya no existen en `tailwind.config.js`).
 
@@ -116,6 +98,34 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-24** — **Prueba en pantalla de toda la web**, hecha por el dueño
+  contra el backend local, con la lista de nueve secciones. **Todo dio lo
+  esperado**:
+  1. GERENCIA ve solo Socios y Planes, las rutas de ADMIN escritas a mano
+     redirigen, y cobra.
+  2. El cobro anticipado se encadena al vencimiento vigente, el listado se
+     actualiza sin recargar, y la fecha pasada avisa.
+  3. Socios arranca por apellido, los encabezados ordenan, y en la búsqueda no
+     se ofrecen.
+  4. Dashboard: gráfico, tooltip, clic al desglose, vista de tabla, y la
+     tarjeta de activos baja al dar de baja a alguien.
+  5. Pagos (W12/W13): total igual al del dashboard, meses, orden, anulación
+     con motivo, el 400 del encadenado, y el socio sigue ACTIVO si le queda
+     otro pago (el arreglo `de3a0d8` del backend).
+  6. Cuentas de staff (W7): alta, baja, "reactivala", reactivar y reset.
+  7. Cambiar la propia contraseña (W8): la actual mal no cierra la sesión; la
+     buena manda al login con aviso. `gerencia` quedó con `gerencia123`.
+  8. Portal del socio (W10) de punta a punta, en ventana privada.
+  9. F5, **la expiración del token a los 30 minutos** (un solo `/refresh`) y
+     el backend caído (cada pantalla dice que no pudo conectar).
+  - **Un solo hallazgo, de diseño**: el padrón estaba ordenado por apellido
+    pero mostraba "Ana Pérez", así que el orden no se notaba. Ahora Socios y
+    Pagos muestran **"Pérez, Ana"**; el resto de la web (modales,
+    comprobante, portal) sigue con el nombre primero.
+  - Además: pedido **B7** al backend en `TICKETS.md` §6 (el `sort` con un
+    campo inexistente da 500 porque `PropertyReferenceException` cae en el
+    handler genérico; verificado en `GlobalExceptionHandler`).
 
 - **2026-09-23 (séptimo tramo)** — **Paso 6, el gráfico del dashboard.** Sin
   dependencias: **`recharts` se descartó** (decisión del dueño; razones en

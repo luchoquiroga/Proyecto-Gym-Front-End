@@ -460,3 +460,38 @@ mes; rango invertido, mal formado y de más de 24 meses → 400; GERENCIA → 40
 `features/dashboard/hooks.ts`: de 12 consultas a una, y se va la lógica de
 "si falla una, falla todo". El gráfico, la tabla y los estados no cambian.
 `CONTRATO-API.md` se actualiza con el endpoint nuevo.
+
+#### B7 — `sort` con un campo inexistente responde 500 (debería ser 400)
+
+**Qué pasa.** Los listados paginados (`/clientes`, `/pagos`, `/usuarios`)
+reciben el `Pageable` de Spring, que acepta `?sort=campo,dir`. Con un campo que
+no existe en la entidad (`/clientes?sort=noExiste,asc`), el backend responde
+**500** "Ocurrió un error inesperado en el servidor". Verificado el 2026-09-23
+contra el backend local. Viene de la `PropertyReferenceException` de Spring
+Data, que el `GlobalExceptionHandler` no captura y termina en el handler
+genérico.
+
+**Por qué importa aunque la web no lo dispare.** El front solo manda campos de
+una lista cerrada (`ORDENABLES_*` en cada `api.ts`), así que la web no llega
+nunca a este caso. Pero un parámetro mal escrito es un error del que llama, no
+del servidor: un 500 ensucia los logs, dispara alertas que no son y esconde los
+500 de verdad. Y el escritorio o cualquier otro cliente puede mandarlo.
+
+**Qué se pide.**
+
+- **400 con `mensaje`** que nombre el campo, por ejemplo: "No se puede ordenar
+  por 'noExiste'". Mismo cuerpo que el resto (`ErrorResponse`).
+- Opcional, y mejor: una **lista blanca** de campos ordenables por endpoint,
+  para no exponer a través de `sort` nombres internos de la entidad (o
+  relaciones que disparen joins caros, como `cliente.pagos`).
+
+**Implementación.** Un `@ExceptionHandler(PropertyReferenceException.class)` en
+`GlobalExceptionHandler` que devuelva 400 alcanza para lo primero. La lista
+blanca, si se hace, va en cada controller o en un validador del `Pageable`.
+
+**Tests sugeridos.** `GET /clientes?sort=noExiste,asc` → 400 con el nombre del
+campo en `mensaje`; un `sort` válido sigue ordenando; lo mismo en `/pagos` y
+`/usuarios`.
+
+**Impacto en el front.** Ninguno en el código. `CONTRATO-API.md` §3
+("Paginación") cambia "un campo inexistente responde 500" por el 400.

@@ -133,7 +133,9 @@ export const SociosPage = () => {
                         {socio.documento}
                       </td>
                       <td className="py-4 px-6 font-bold text-white whitespace-nowrap">
-                        {socio.nombre} {socio.apellido}
+                        {/* Apellido primero: el listado está ordenado por apellido, y
+                            con "Ana Pérez" el orden no se ve aunque esté. */}
+                        {socio.apellido}, {socio.nombre}
                         {socio.email && (
                           <span className="block text-[11px] font-normal text-gym-subtle">
                             {socio.email}
