@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './api/queryClient';
 import { AuthInitializer } from './auth/AuthInitializer';
 import { RutaProtegida } from './auth/RutaProtegida';
 import { RUTAS_LOGIN, rutaInicial } from './auth/rutas';
@@ -15,17 +16,6 @@ import { CuentasPage } from './features/staff/pages/CuentasPage';
 import { PortalSocioPage } from './features/portal-socio/pages/PortalSocioPage';
 import { LoginSocioPage } from './features/portal-socio/pages/LoginSocioPage';
 import { RegistroSocioPage } from './features/portal-socio/pages/RegistroSocioPage';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      // Un 401 lo resuelve el interceptor con el refresh; reintentar de más solo
-      // retrasa el mensaje de error cuando el backend está caído de verdad.
-      retry: 1,
-    },
-  },
-});
 
 const RedireccionRaiz = () => {
   const { principal, portal, cargandoSesion } = useSesion();

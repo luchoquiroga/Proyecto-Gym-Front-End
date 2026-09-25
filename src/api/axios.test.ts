@@ -124,6 +124,23 @@ describe('interceptor de axios', () => {
     expect(useSesion.getState().accessToken).toBeNull();
   });
 
+  it('si el refresh no llega (503 del proxy), rechaza con su mensaje pero NO cierra la sesión', async () => {
+    // Arranque en frío de Render o un corte: la cookie puede seguir siendo
+    // válida. Cerrar la sesión acá sacaba al usuario sin motivo.
+    servidor.use(
+      recursoProtegido('/api/v1/planes'),
+      http.post(url('/api/v1/usuarios/refresh'), () => new HttpResponse('Service Unavailable', { status: 503 })),
+    );
+    iniciarCon('staff', STAFF);
+
+    const error = await api.get('/api/v1/planes').catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ErrorApi);
+    expect((error as ErrorApi).status).toBe(503);
+    expect((error as ErrorApi).mensaje).toMatch(/no está disponible/);
+    expect(useSesion.getState().principal).toEqual(STAFF);
+  });
+
   it('si la petición reintentada vuelve a dar 401, cierra la sesión sin un segundo refresh', async () => {
     // El refresh "anda" pero el token nuevo tampoco sirve: sin el tope, esto
     // sería un bucle infinito de refresh.

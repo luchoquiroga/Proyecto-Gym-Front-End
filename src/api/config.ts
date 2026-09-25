@@ -18,3 +18,11 @@ export const ENTORNO: string =
   import.meta.env.VITE_ENV_NAME || (import.meta.env.PROD ? 'production' : 'local');
 
 export const ES_PRODUCCION = ENTORNO === 'production';
+
+/**
+ * Tope de espera de cada petición. Generoso a propósito: el arranque en frío de
+ * Render tardó más de 90 s la primera vez (24/09), y cortar antes haría fallar
+ * justo la petición que lo despierta. Sin tope, en cambio, un backend colgado
+ * deja los spinners girando para siempre.
+ */
+export const TIMEOUT_MS = 100_000;

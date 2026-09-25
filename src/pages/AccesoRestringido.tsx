@@ -1,7 +1,6 @@
-import { useNavigate } from 'react-router-dom';
-import { LogOut, ShieldAlert } from 'lucide-react';
+import { Loader2, LogOut, ShieldAlert } from 'lucide-react';
 import { useSesion } from '../auth/sesion';
-import { logout } from '../auth/api';
+import { useCerrarSesion } from '../auth/useCerrarSesion';
 
 /**
  * Pantalla para un principal autenticado que no tiene ningún área asignada.
@@ -11,14 +10,8 @@ import { logout } from '../auth/api';
  * escritorio Swing era el único lugar donde gerencia podía trabajar.
  */
 export const AccesoRestringido = () => {
-  const { principal, portal, cerrarSesion } = useSesion();
-  const navigate = useNavigate();
-
-  const salir = async () => {
-    await logout(portal);
-    cerrarSesion();
-    navigate('/login', { replace: true });
-  };
+  const principal = useSesion((s) => s.principal);
+  const { salir, saliendo, error: errorAlSalir } = useCerrarSesion();
 
   return (
     <div className="min-h-screen bg-gym-black flex items-center justify-center p-4 text-gym-white">
@@ -42,12 +35,19 @@ export const AccesoRestringido = () => {
           )}
         </div>
 
+        {errorAlSalir && (
+          <p role="alert" className="text-sm text-gym-red-400 leading-snug">
+            {errorAlSalir}
+          </p>
+        )}
+
         <button
           onClick={salir}
-          className="w-full py-3 px-4 bg-gym-red-600 hover:bg-gym-red-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-red-glow flex items-center justify-center gap-2"
+          disabled={saliendo}
+          className="w-full py-3 px-4 bg-gym-red-600 hover:bg-gym-red-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-red-glow flex items-center justify-center gap-2 disabled:opacity-50"
         >
-          <LogOut className="w-4 h-4" />
-          Volver al login
+          {saliendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+          {saliendo ? 'Cerrando…' : errorAlSalir ? 'Reintentar' : 'Volver al login'}
         </button>
       </div>
     </div>

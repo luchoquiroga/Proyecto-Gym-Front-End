@@ -9,6 +9,7 @@ import { aplicarErroresDelServidor } from '../../../lib/erroresFormulario';
 import { useSesion } from '../../../auth/sesion';
 import { RUTAS_LOGIN, rutaInicial } from '../../../auth/rutas';
 import { useLoginSocio } from '../hooks';
+import { logout } from '../../../auth/api';
 import { loginSocioSchema, type LoginSocioFormulario } from '../schemas';
 
 const CAMPOS = ['email', 'contrasena'] as const;
@@ -49,6 +50,10 @@ export const LoginSocioPage = () => {
     try {
       const { principal, accessToken } = await ingreso.mutateAsync(valores);
       iniciarSesion('socio', principal, accessToken);
+      // Si en esta PC quedó abierta la sesión de un empleado (el socio entra
+      // desde el mostrador), se cierra: si no, su cookie seguiría viva y
+      // bastaría volver al portal de staff para entrar como ese empleado.
+      void logout('staff').catch(() => undefined);
 
       const origen = estado.from?.pathname;
       navigate(origen?.startsWith('/socio/') ? origen : rutaInicial(principal), { replace: true });

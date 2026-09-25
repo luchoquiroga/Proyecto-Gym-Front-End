@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 import {
   CreditCard,
   Dumbbell,
   KeyRound,
   LayoutDashboard,
+  Loader2,
   LogOut,
   Menu,
   Shield,
@@ -14,7 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { useSesion } from '../../auth/sesion';
-import { logout } from '../../auth/api';
+import { useCerrarSesion } from '../../auth/useCerrarSesion';
 import { ES_PRODUCCION } from '../../api/config';
 import type { RolStaff } from '../../auth/types';
 import { CambiarContrasena } from '../../features/cuenta/components/CambiarContrasena';
@@ -43,17 +44,10 @@ export const StaffLayout = () => {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [cambiandoContrasena, setCambiandoContrasena] = useState(false);
   const principal = useSesion((s) => s.principal);
-  const cerrarSesion = useSesion((s) => s.cerrarSesion);
-  const navigate = useNavigate();
+  const { salir, saliendo, error: errorAlSalir } = useCerrarSesion();
 
   const rol: RolStaff = principal?.tipo === 'staff' ? principal.rol : 'GERENCIA';
   const items = ITEMS.filter((item) => item.roles.includes(rol));
-
-  const salir = async () => {
-    await logout('staff');
-    cerrarSesion();
-    navigate('/login', { replace: true });
-  };
 
   return (
     <div className="min-h-screen bg-gym-black flex flex-col md:flex-row text-gym-white">
@@ -149,12 +143,19 @@ export const StaffLayout = () => {
             Cambiar contraseña
           </button>
 
+          {errorAlSalir && (
+            <p role="alert" className="px-2 text-[11px] text-gym-red-400 leading-snug">
+              {errorAlSalir}
+            </p>
+          )}
+
           <button
             onClick={salir}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-gym-dark hover:bg-gym-red-600/20 text-gym-muted hover:text-gym-red-400 border border-gym-border hover:border-gym-red-600/40 transition-colors"
+            disabled={saliendo}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-gym-dark hover:bg-gym-red-600/20 text-gym-muted hover:text-gym-red-400 border border-gym-border hover:border-gym-red-600/40 transition-colors disabled:opacity-50"
           >
-            <LogOut className="w-4 h-4" />
-            Cerrar sesión
+            {saliendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+            {saliendo ? 'Cerrando…' : errorAlSalir ? 'Reintentar' : 'Cerrar sesión'}
           </button>
         </div>
       </aside>

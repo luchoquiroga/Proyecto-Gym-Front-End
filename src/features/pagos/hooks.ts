@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { TAMANIO_PAGINA } from '../../types/api';
 import { anularPago, listarPagos, registrarPago, type PagosQuery } from './api';
+import { resultadoIncierto } from '../../lib/errores';
 
 export const usePagos = (params: Omit<PagosQuery, 'size'> & { size?: number }) => {
   const consulta: PagosQuery = { size: TAMANIO_PAGINA, ...params };
@@ -23,11 +24,19 @@ const invalidarLoQueCambiaUnPago = (queryClient: ReturnType<typeof useQueryClien
     queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
   ]);
 
+/**
+ * Si el resultado es incierto (sin respuesta, o un 5xx), el cobro pudo haberse
+ * guardado igual: se refresca también, para que el listado muestre el
+ * vencimiento real antes de que alguien vuelva a cobrar.
+ */
 export const useRegistrarPago = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: registrarPago,
     onSuccess: () => invalidarLoQueCambiaUnPago(queryClient),
+    onError: (error) => {
+      if (resultadoIncierto(error)) void invalidarLoQueCambiaUnPago(queryClient);
+    },
   });
 };
 
