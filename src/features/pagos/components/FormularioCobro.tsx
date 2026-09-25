@@ -7,6 +7,7 @@ import { CampoTexto } from '../../../components/ui/CampoTexto';
 import { CampoSelect } from '../../../components/ui/CampoSelect';
 import { Cargando, ErrorDeCarga, SinDatos } from '../../../components/estado/Estados';
 import { aplicarErroresDelServidor } from '../../../lib/erroresFormulario';
+import { mensajeDeError, resultadoIncierto } from '../../../lib/errores';
 import { formatearFecha, formatearPesos } from '../../../lib/formato';
 import { hoyIso } from '../../../lib/fechas';
 import { usePlanes } from '../../planes/hooks';
@@ -77,6 +78,8 @@ interface CamposCobroProps extends FormularioCobroProps {
 /** Se monta recién con los planes a mano, porque el esquema y los valores iniciales dependen de ellos. */
 const CamposCobro = ({ socio, planes, registrar, onCerrar, onCobrado }: CamposCobroProps) => {
   const [mensajeServidor, setMensajeServidor] = useState<string | null>(null);
+  // El cobro pudo haberse registrado aunque acá falló (ver `resultadoIncierto`).
+  const [cobroIncierto, setCobroIncierto] = useState(false);
   const hoy = hoyIso();
   const schema = useMemo(() => crearCobroSchema(planes), [planes]);
 
@@ -114,6 +117,17 @@ const CamposCobro = ({ socio, planes, registrar, onCerrar, onCobrado }: CamposCo
       const pago = await registrar.mutateAsync({ clienteId: socio.id, ...valores });
       onCobrado(pago);
     } catch (error) {
+      // Sin respuesta o con un 5xx, el pago pudo haber quedado guardado. Volver
+      // a apretar "Registrar pago" lo cobraría dos veces, así que se bloquea y
+      // se manda a mirar el vencimiento del socio, que es el dato que GERENCIA
+      // puede ver (no puede leer pagos). El listado ya se está refrescando.
+      if (resultadoIncierto(error)) {
+        setCobroIncierto(true);
+        setMensajeServidor(
+          `${mensajeDeError(error)} No se sabe si el cobro quedó registrado: antes de volver a cobrar, cerrá esta ventana y fijate en el listado si cambió el vencimiento del socio.`,
+        );
+        return;
+      }
       // El 400 de "monto menor al precio" no trae `errores`: viene solo con
       // `mensaje` y va arriba, tal cual lo escribió el backend.
       setMensajeServidor(aplicarErroresDelServidor(error, setError, CAMPOS));
@@ -175,6 +189,7 @@ const CamposCobro = ({ socio, planes, registrar, onCerrar, onCobrado }: CamposCo
         <CampoTexto
           etiqueta="Fecha de pago"
           type="date"
+          max={hoy}
           disabled={guardando}
           error={errors.fechaPago?.message}
           ayuda="Hoy, salvo que se esté cargando un cobro atrasado."
@@ -195,7 +210,7 @@ const CamposCobro = ({ socio, planes, registrar, onCerrar, onCobrado }: CamposCo
         </button>
         <button
           type="submit"
-          disabled={guardando}
+          disabled={guardando || cobroIncierto}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-gym-red-600 hover:bg-gym-red-500 text-white shadow-red-glow transition-colors disabled:opacity-50"
         >
           {guardando && <Loader2 className="w-4 h-4 animate-spin" />}

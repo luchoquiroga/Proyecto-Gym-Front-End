@@ -14,12 +14,23 @@ export const normalizarDocumento = (documento: string) =>
   documento.replace(/[.\-\s]/g, '').toUpperCase();
 
 const LARGO_MINIMO_DOCUMENTO = 6;
+/** Los largos de las columnas: más largo, el backend responde 400 con el campo. */
+const LARGO_MAXIMO_NOMBRE = 100;
+const LARGO_MAXIMO_TELEFONO = 50;
 const LARGO_MAXIMO_DOCUMENTO = 20;
 
 export const socioSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es obligatorio'),
-  apellido: z.string().min(1, 'El apellido es obligatorio'),
-  telefono: z.string(),
+  nombre: z
+    .string()
+    .min(1, 'El nombre es obligatorio')
+    .max(LARGO_MAXIMO_NOMBRE, `El nombre no puede superar los ${LARGO_MAXIMO_NOMBRE} caracteres`),
+  apellido: z
+    .string()
+    .min(1, 'El apellido es obligatorio')
+    .max(LARGO_MAXIMO_NOMBRE, `El apellido no puede superar los ${LARGO_MAXIMO_NOMBRE} caracteres`),
+  telefono: z
+    .string()
+    .max(LARGO_MAXIMO_TELEFONO, `El teléfono no puede superar los ${LARGO_MAXIMO_TELEFONO} caracteres`),
   documento: z
     .string()
     .min(1, 'El documento es obligatorio')

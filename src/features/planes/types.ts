@@ -5,3 +5,6 @@ export interface Plan {
   precio: number;
   duracion: number;
 }
+
+/** Cuerpo de `POST /planes` y `PUT /planes/{id}`. */
+export type PlanRequest = Omit<Plan, 'id'>;

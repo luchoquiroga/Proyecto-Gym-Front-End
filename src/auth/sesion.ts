@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Principal, TipoPortal } from './types';
 import { guardarUltimoPortal, leerUltimoPortal } from './portales';
+import { queryClient } from '../api/queryClient';
 
 /**
  * Store de sesión, en memoria RAM.
@@ -9,7 +10,14 @@ import { guardarUltimoPortal, leerUltimoPortal } from './portales';
  * persistencia entre recargas la da la cookie HttpOnly del refresh + el silent
  * refresh del arranque. Acá tampoco se duplican datos que vienen del API: para
  * eso está react-query.
+ *
+ * Cuando cambia quién está sentado, se vacía el cache de react-query: en la PC
+ * del mostrador, lo que leyó una persona no tiene que quedarle a la siguiente.
  */
+
+const esLaMismaPersona = (a: Principal | null, b: Principal) =>
+  a !== null && a.tipo === b.tipo && a.id === b.id;
+
 interface EstadoSesion {
   principal: Principal | null;
   accessToken: string | null;
@@ -22,18 +30,24 @@ interface EstadoSesion {
   terminarCarga: () => void;
 }
 
-export const useSesion = create<EstadoSesion>((set) => ({
+export const useSesion = create<EstadoSesion>((set, get) => ({
   principal: null,
   accessToken: null,
   portal: leerUltimoPortal(),
   cargandoSesion: true,
 
   iniciarSesion: (portal, principal, accessToken) => {
+    // El silent refresh también pasa por acá, cada 30 minutos: ahí es la misma
+    // persona y el cache se conserva.
+    if (!esLaMismaPersona(get().principal, principal)) queryClient.clear();
     guardarUltimoPortal(portal);
     set({ portal, principal, accessToken, cargandoSesion: false });
   },
 
-  cerrarSesion: () => set({ principal: null, accessToken: null, cargandoSesion: false }),
+  cerrarSesion: () => {
+    queryClient.clear();
+    set({ principal: null, accessToken: null, cargandoSesion: false });
+  },
 
   terminarCarga: () => set({ cargandoSesion: false }),
 }));

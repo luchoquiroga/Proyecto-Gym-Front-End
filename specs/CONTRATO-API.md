@@ -2,7 +2,9 @@
 
 Fecha: 2026-09-18
 Estado: vigente — refleja el backend después de sus 9 fases
-(última: Fase 9, los pedidos del front B1–B5, commit `9c47895`)
+(última: Fase 9, los pedidos del front B1–B5, commit `9c47895`) **más la
+revisión de seguridad y casos borde del 25/09** (B9 y los topes de §3), que al
+escribir esto está en el working tree de `RamaLuciano` del backend, sin commitear
 
 **El "hoy" del backend es el de Argentina** (Fase 9, B1): un `Clock` con zona
 `America/Argentina/Buenos_Aires` decide la fecha de un cobro sin `fechaPago`,
@@ -18,7 +20,7 @@ abrir el repo del backend en cada duda. No es la fuente de verdad.
 | Pregunta | Fuente de verdad real |
 |---|---|
 | ¿Quién puede llamar a este endpoint? | `api\specs\AUTHZ-MATRIX.md` |
-| ¿Qué campos exactos tiene este DTO? | `/swagger-ui/index.html` del backend corriendo (`/v3/api-docs`) |
+| ¿Qué campos exactos tiene este DTO? | `http://localhost:8080/swagger-ui/index.html` del backend **local** (`/v3/api-docs`). En producción (Render) Swagger está apagado desde el 25/09 |
 | ¿Por qué el backend hace esto así? | `api\specs\2026-09-15-replanteo-backend.md` |
 
 Repo del backend: `C:\Users\lucia\IdeaProjects\api`.
@@ -83,9 +85,23 @@ Ojo con dos asimetrías reales (no las normalices en el front, esperalas):
 - Credenciales incorrectas devuelven 401 con cuerpos distintos: staff manda
   `{mensaje, status}`, socio manda `{mensaje}`.
 
+### Logout: sin `Authorization`
+
+Los dos `/logout` son públicos y solo leen la cookie, así que el front **no les
+manda el Bearer**. Hasta el 25/09 era obligatorio: el filtro JWT del backend
+validaba cualquier Bearer, también en rutas públicas, y con el access token
+vencido respondía **401 antes de llegar al logout**, así que la cookie
+sobrevivía. **B9 lo arregló del lado del backend**: un token inválido sigue como
+anónimo y decide la regla de la ruta; en una ruta protegida sigue siendo 401 con
+"Token inválido o expirado", así que para el interceptor no cambia nada. El front
+igual no manda el Bearer: no lo necesita. Sin cookie, el logout responde 200, así
+que el front cierra siempre los dos portales.
+
 ### Rate limit
 
-Los dos `/login` están limitados a **5 intentos por minuto por IP**. Al pasarse:
+Los dos `/login` y **`/clientes/registro`** (desde el 25/09: cada intento
+prueba un código de activación) están limitados a **5 intentos por minuto por
+IP**, cada uno con su propio contador. Al pasarse:
 `429` con `{"status":429,"mensaje":"Demasiados intentos, esperá un minuto"}`.
 La pantalla de login tiene que mostrar ese mensaje, no "credenciales
 incorrectas".
@@ -116,12 +132,13 @@ trae `errores`, se pintan los campos; cuando no, se muestra `mensaje` arriba.
 
 | Status | Qué significa acá | Qué hace el front |
 |---|---|---|
-| 400 | validación o regla de negocio (monto menor al plan, estado no aceptado) | mostrar `mensaje` / pintar `errores` |
+| 400 | validación o regla de negocio (monto menor al plan, estado no aceptado). Desde el 25/09 también: JSON mal formado, un enum que no existe o una fecha imposible ("El cuerpo de la solicitud es inválido o está mal formado"), y un parámetro obligatorio que falta ("Falta el parámetro obligatorio '…'"); antes eran 500 | mostrar `mensaje` / pintar `errores` |
 | 401 | sin token o vencido | el interceptor intenta refresh; si falla, a login |
 | 403 | el rol no alcanza | **mostrarlo, no tragarlo**: significa que la pantalla y los permisos se desincronizaron |
-| 404 | no existe (el mensaje suele contener "no encontrado") | mensaje en pantalla |
-| 409 | documento de socio duplicado, o borrado de plan bloqueado. **Ojo:** el email repetido del registro y el nombre de usuario repetido del staff son **400**, no 409 | mensaje en pantalla, generalmente sobre un campo |
-| 429 | rate limit de login | mensaje propio |
+| 404 | no existe (el mensaje suele contener "no encontrado"). Una ruta inexistente también es 404 desde el 25/09, con "El recurso solicitado no existe" (antes 500) | mensaje en pantalla |
+| 405 / 415 | método HTTP equivocado, o un `Content-Type` que no es JSON (desde el 25/09; antes 500). Son errores de programación del front, no del usuario | mensaje en pantalla |
+| 409 | documento de socio duplicado. **Ojo:** el borrado de un plan con pagos es **400**, no 409 (corregido el 25/09); el email repetido del registro y el nombre de usuario repetido del staff son **400**, no 409 | mensaje en pantalla, generalmente sobre un campo |
+| 429 | rate limit de login y del registro del socio | mensaje propio |
 
 ---
 
@@ -172,12 +189,26 @@ Cosas que hay que saber sí o sí para las pantallas de socios:
   puedan cargarse.
 - **El registro del socio** (`POST /clientes/registro`) responde 200 con
   `{mensaje}` y **no inicia sesión**: después hay que pasar por `/clientes/login`.
-  El código tiene **8 caracteres** en mayúsculas, sin `0/O/1/I`, y se busca
-  exacto (el front lo normaliza). Todos los rechazos son **400 con `mensaje`**
+  El código tiene **8 caracteres** en mayúsculas, sin `0/O/1/I`. Desde el 25/09
+  el backend también lo normaliza (`trim` + mayúsculas); el front lo sigue
+  haciendo, y además saca espacios y guiones del medio. Todos los rechazos son **400 con `mensaje`**
   —código inválido o usado, cuenta ya registrada, email de otro socio—; el email
-  repetido acá es 400, no 409. La contraseña pide **al menos 8 caracteres**
-  (Fase 9, B3); el login no valida largo, así que una cuenta vieja con
+  repetido acá es 400, no 409. **Si el email ya era de ese mismo socio** (el
+  staff se lo cargó en el alta), desde el 25/09 no es un conflicto: antes se
+  rechazaba y el socio no podía registrarse. La contraseña pide **entre 8 y 72
+  caracteres** (el mínimo es de la Fase 9, B3; el máximo, del 25/09, porque
+  BCrypt solo usa los primeros 72 bytes); el login no valida largo, así que una cuenta vieja con
   contraseña corta sigue entrando. Verificado contra el backend el 22/09.
+- **El email se guarda en minúsculas y sin espacios** (desde el 25/09), y el
+  login lo busca sin distinguir mayúsculas: `Juan@X.com` y `juan@x.com` son la
+  misma cuenta. Un email vacío se guarda como `null`, así que dos socios sin
+  email ya no chocan (antes el segundo daba 409).
+- **Largos máximos** (desde el 25/09; más largo es 400 con el campo en
+  `errores`, antes era un 409 engañoso): `nombre` y `apellido` 100, `telefono`
+  50, `email` 150.
+- **`/clientes/buscar` con el nombre vacío → 400** ("Escribí al menos una letra
+  del nombre para buscar."), desde el 25/09. Antes traía a todos los socios sin
+  paginar. El front solo busca con texto, así que no lo dispara.
 - **`codigoActivacion` aparece una sola vez, en la respuesta del alta.** Es lo
   que el staff le entrega en mano al socio para que después se registre y entre
   al portal. La pantalla de alta **tiene que mostrarlo bien visible**: si se
@@ -221,6 +252,15 @@ Reglas del backend que la UI tiene que respetar:
   pagos y no es un olvido. Corregir un importe = anular + volver a cobrar.
 - **`registrado_por` sale del token**, nunca del body. No lo mandes.
 - **`montoAbonado` es opcional**: si no va, el backend cobra el precio del plan.
+  Tope: **1.000.000.000** (desde el 25/09; un `1e400` llegaba como Infinity y
+  rompía la caja del mes).
+- **`fechaPago` no puede ser futura → 400** "La fecha de cobro no puede ser
+  posterior a hoy." (desde el 25/09; antes activaba al socio y sumaba en la caja
+  de un día que no pasó). "Hoy" es el del `Clock` de Argentina.
+- **Dos cobros simultáneos al mismo socio** (un doble clic) ya no parten del
+  mismo vencimiento: el cobro y la anulación bloquean la fila del socio
+  (`SELECT … FOR UPDATE`) desde el 25/09. Sin test de concurrencia en el
+  backend. El front igual deshabilita el botón mientras cobra.
 - **El cobro anticipado se encadena** (Fase 9, B2), sea cual sea el plan:
 
   ```
@@ -257,9 +297,22 @@ Reglas del backend que la UI tiene que respetar:
 { "id": 2, "nombre": "Mensual", "precio": 15000, "duracion": 30 }
 ```
 
+Validación (desde el 25/09): `nombre` obligatorio y de hasta 100 caracteres,
+`precio` mayor a cero y hasta **1.000.000.000**, `duracion` mayor a cero y hasta
+**3660 días** (diez años; más, el vencimiento se salía del rango de fechas de
+Postgres y el primer cobro daba 500).
+
 No hay `GET /planes/{id}` ni búsqueda: con un puñado de planes, el listado ya es
-la pantalla. `DELETE` es el **único** borrado real del API, y devuelve 409 si el
-plan ya tiene pagos.
+la pantalla. `DELETE` es el **único** borrado real del API (204), y devuelve
+**400 con `mensaje`** si el plan ya tiene pagos, incluidos los anulados. No es
+409: `PlanServiceImpl.eliminar` convierte la violación de FK en una
+`IllegalArgumentException`, que el handler mapea a 400 (verificado en el código
+el 25/09; antes este documento decía 409).
+
+Editar un plan (`PUT`) no toca los pagos ya registrados: cada pago guarda su
+`montoAbonado` y su `fechaVencimiento`. Lo que sí cambia es el **nombre** que
+muestran los pagos viejos y el `planVigente` de los socios, que lo leen del
+plan. Validación: nombre obligatorio, `precio` y `duracion` mayores a cero.
 
 ### Staff — `/usuarios`
 
@@ -272,6 +325,10 @@ plan ya tiene pagos.
 | PATCH | `/usuarios/{id}/activo` | ADMIN | `{activo: true|false}`. Es la baja **y** la reactivación |
 
 `UsuarioResponse`: `{ "id": 1, "nombre": "admin", "rol": "ADMIN", "activo": true }`.
+
+Desde el 25/09: las contraseñas (alta, reset y cambio propio) van de **8 a 72
+caracteres**, el nombre de usuario hasta 100, y **el nombre se guarda sin
+espacios alrededor** (`"juan "` y `"juan"` no pueden ser dos cuentas).
 
 **Alta con nombre repetido → 400, no 409**, con dos mensajes: "ya existe" si
 la cuenta está activa, o "pertenece a una cuenta dada de baja. Reactivala en vez

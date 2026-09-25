@@ -6,6 +6,8 @@ import { z } from 'zod';
  */
 
 const LARGO_MINIMO_CONTRASENA = 8;
+/** BCrypt solo usa los primeros 72 bytes: el backend rechaza una más larga. */
+const LARGO_MAXIMO_CONTRASENA = 72;
 
 export const cambioContrasenaSchema = z
   .object({
@@ -16,6 +18,10 @@ export const cambioContrasenaSchema = z
       .min(
         LARGO_MINIMO_CONTRASENA,
         `La nueva contraseña debe tener al menos ${LARGO_MINIMO_CONTRASENA} caracteres`,
+      )
+      .max(
+        LARGO_MAXIMO_CONTRASENA,
+        `La nueva contraseña no puede superar los ${LARGO_MAXIMO_CONTRASENA} caracteres`,
       ),
     // Solo del front: evita quedarse con una contraseña mal tipeada que nadie conoce.
     repetirContrasena: z.string(),

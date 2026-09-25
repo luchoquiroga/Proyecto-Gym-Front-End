@@ -1,10 +1,8 @@
-import { useNavigate } from 'react-router-dom';
-import { CalendarClock, Dumbbell, IdCard, LogOut, Tags } from 'lucide-react';
+import { CalendarClock, Dumbbell, IdCard, Loader2, LogOut, Tags } from 'lucide-react';
 import { Cargando, ErrorDeCarga } from '../../../components/estado/Estados';
 import { formatearFecha } from '../../../lib/formato';
 import { useSesion } from '../../../auth/sesion';
-import { logout } from '../../../auth/api';
-import { RUTAS_LOGIN } from '../../../auth/rutas';
+import { useCerrarSesion } from '../../../auth/useCerrarSesion';
 import { useSocio } from '../../socios/hooks';
 import { EstadoSocioBadge } from '../../socios/components/EstadoSocioBadge';
 import { DiasRestantes } from '../components/DiasRestantes';
@@ -18,17 +16,10 @@ import { DiasRestantes } from '../components/DiasRestantes';
  */
 export const PortalSocioPage = () => {
   const principal = useSesion((s) => s.principal);
-  const cerrarSesion = useSesion((s) => s.cerrarSesion);
-  const navigate = useNavigate();
+  const { salir, saliendo, error: errorAlSalir } = useCerrarSesion();
 
   const idSocio = principal?.tipo === 'socio' ? principal.id : null;
   const { data: socio, isLoading, isError, error, refetch } = useSocio(idSocio);
-
-  const salir = async () => {
-    await logout('socio');
-    cerrarSesion();
-    navigate(RUTAS_LOGIN.socio, { replace: true });
-  };
 
   return (
     <div className="min-h-screen bg-gym-black text-gym-white p-4 md:p-8">
@@ -50,12 +41,19 @@ export const PortalSocioPage = () => {
 
           <button
             onClick={salir}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-gym-dark hover:bg-gym-red-600/20 text-gym-muted hover:text-gym-red-400 border border-gym-border hover:border-gym-red-600/40 transition-colors"
+            disabled={saliendo}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-gym-dark hover:bg-gym-red-600/20 text-gym-muted hover:text-gym-red-400 border border-gym-border hover:border-gym-red-600/40 transition-colors disabled:opacity-50"
           >
-            <LogOut className="w-4 h-4" />
-            Cerrar sesión
+            {saliendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+            {saliendo ? 'Cerrando…' : errorAlSalir ? 'Reintentar' : 'Cerrar sesión'}
           </button>
         </header>
+
+        {errorAlSalir && (
+          <p role="alert" className="px-4 py-3 rounded-xl bg-gym-red-900/20 border border-gym-red-600/40 text-sm text-gym-red-400">
+            {errorAlSalir}
+          </p>
+        )}
 
         <section className="bg-gym-card border border-gym-border rounded-3xl shadow-card-dark">
           {isLoading ? (

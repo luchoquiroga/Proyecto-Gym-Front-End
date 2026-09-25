@@ -6,15 +6,23 @@ import { z } from 'zod';
  */
 
 const LARGO_MINIMO_CONTRASENA = 8;
+/** BCrypt solo usa los primeros 72 bytes: el backend rechaza una más larga. */
+const LARGO_MAXIMO_CONTRASENA = 72;
+const LARGO_MAXIMO_NOMBRE = 100;
 
 const contrasenaNueva = z
   .string()
   .min(1, 'La contraseña es obligatoria')
-  .min(LARGO_MINIMO_CONTRASENA, `La contraseña debe tener al menos ${LARGO_MINIMO_CONTRASENA} caracteres`);
+  .min(LARGO_MINIMO_CONTRASENA, `La contraseña debe tener al menos ${LARGO_MINIMO_CONTRASENA} caracteres`)
+  .max(LARGO_MAXIMO_CONTRASENA, `La contraseña no puede superar los ${LARGO_MAXIMO_CONTRASENA} caracteres`);
 
 export const cuentaSchema = z
   .object({
-    nombre: z.string().trim().min(1, 'El nombre de usuario es obligatorio'),
+    nombre: z
+      .string()
+      .trim()
+      .min(1, 'El nombre de usuario es obligatorio')
+      .max(LARGO_MAXIMO_NOMBRE, `El nombre de usuario no puede superar los ${LARGO_MAXIMO_NOMBRE} caracteres`),
     rol: z.enum(['ADMIN', 'GERENCIA'], { error: 'Elegí un rol' }),
     contrasena: contrasenaNueva,
     repetirContrasena: z.string(),

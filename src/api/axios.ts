@@ -1,9 +1,9 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { BASE_URL } from './config';
+import { BASE_URL, TIMEOUT_MS } from './config';
 import { useSesion } from '../auth/sesion';
 import { refrescarSesion } from '../auth/api';
 import { RUTAS_DE_AUTH } from '../auth/portales';
-import { normalizarError } from '../lib/errores';
+import { normalizarError, sesionRechazada } from '../lib/errores';
 
 /**
  * Instancia única del API. Todo el front pasa por acá.
@@ -18,6 +18,7 @@ import { normalizarError } from '../lib/errores';
 const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
+  timeout: TIMEOUT_MS,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -86,7 +87,11 @@ api.interceptors.response.use(
     } catch (errorDelRefresh) {
       const normalizado = normalizarError(errorDelRefresh);
       vaciarCola(normalizado, null);
-      useSesion.getState().cerrarSesion();
+      // Solo se cierra la sesión si el servidor la rechazó. Si el refresh no
+      // llegó (red, arranque en frío de Render, un 5xx del proxy), la cookie
+      // puede seguir siendo válida: las peticiones fallan con su mensaje y el
+      // próximo intento vuelve a refrescar.
+      if (sesionRechazada(normalizado)) useSesion.getState().cerrarSesion();
       return Promise.reject(normalizado);
     } finally {
       refrescando = false;

@@ -27,6 +27,17 @@ export class ErrorApi extends Error {
 const SIN_CONEXION =
   'No se pudo conectar con el servidor. Verificá que el API esté levantada.';
 
+/**
+ * En el plan gratis de Render el backend se duerme sin tráfico y la primera
+ * petición del día puede tardar más de un minuto (medido el 24/09): el que la
+ * vea tiene que saber que reintentar sirve.
+ */
+const TIEMPO_AGOTADO =
+  'El servidor tardó demasiado en responder. Si es la primera vez en el día, puede estar arrancando: reintentá en un minuto.';
+
+const SERVIDOR_NO_DISPONIBLE =
+  'El servidor no está disponible en este momento. Si recién arranca el día, puede estar despertando: reintentá en un minuto.';
+
 /** Último recurso: el backend casi siempre manda `mensaje`, esto es para cuando no. */
 const MENSAJE_POR_STATUS: Record<number, string> = {
   400: 'Los datos enviados no son válidos.',
@@ -36,6 +47,10 @@ const MENSAJE_POR_STATUS: Record<number, string> = {
   409: 'El dato ya existe o no se puede modificar.',
   429: 'Demasiados intentos, esperá un minuto.',
   500: 'El servidor tuvo un error inesperado.',
+  // Los tres los responde el proxy (Vercel o Render), no el backend: llegan sin `mensaje`.
+  502: SERVIDOR_NO_DISPONIBLE,
+  503: SERVIDOR_NO_DISPONIBLE,
+  504: SERVIDOR_NO_DISPONIBLE,
 };
 
 /**
@@ -47,7 +62,8 @@ export function normalizarError(error: unknown): ErrorApi {
 
   if (axios.isAxiosError(error)) {
     if (!error.response) {
-      return new ErrorApi(SIN_CONEXION, null);
+      const vencioElTimeout = error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT';
+      return new ErrorApi(vencioElTimeout ? TIEMPO_AGOTADO : SIN_CONEXION, null);
     }
 
     const status = error.response.status;
@@ -66,4 +82,26 @@ export function normalizarError(error: unknown): ErrorApi {
 /** Texto listo para mostrar en pantalla. */
 export function mensajeDeError(error: unknown): string {
   return normalizarError(error).mensaje;
+}
+
+/**
+ * La petición pudo haberse guardado en el servidor aunque acá haya fallado: no
+ * llegó la respuesta (red, timeout) o el proxy cortó (5xx). Distinto de un 4xx,
+ * donde el backend contestó que NO la aplicó.
+ *
+ * Importa en las escrituras que no se pueden repetir a ciegas, como cobrar.
+ */
+export function resultadoIncierto(error: unknown): boolean {
+  const { status } = normalizarError(error);
+  return status === null || status >= 500;
+}
+
+/**
+ * El servidor dijo que la sesión no vale (401) o que la cuenta ya no puede
+ * entrar (403). Cualquier otra falla del refresh —red, arranque en frío, un 5xx—
+ * no dice nada sobre la sesión, y cerrarla ahí saca al usuario sin motivo.
+ */
+export function sesionRechazada(error: unknown): boolean {
+  const { status } = normalizarError(error);
+  return status === 401 || status === 403;
 }

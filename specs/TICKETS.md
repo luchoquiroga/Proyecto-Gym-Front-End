@@ -363,6 +363,26 @@ sin él, dos socios homónimos aparecen como dos cobros idénticos y es imposibl
 saber a cuál de los dos hay que anularle el pago (W12). El id no sirve para eso:
 no se muestra y nadie lo reconoce.
 
+### W14 — Planes: crear, editar y eliminar (solo ADMIN) — HECHO el 2026-09-25
+
+Estaba en el alcance (`ARQUITECTURA-APPS.md` §2.1, ADMIN: "Planes: modificar y
+eliminar") y **nunca se convirtió en ticket**, así que la web se dio por
+completa sin él. Apareció el 25/09 revisando el alcance antes de producción.
+Sin esto, subir la cuota no se podía hacer desde la web, y el precio del plan
+es el mínimo que acepta el cobro.
+
+- Alta (`POST /planes`) y edición (`PUT /planes/{id}`): nombre, precio y
+  duración en días. El 400 de validación se pinta en el campo.
+- **Editar no cambia los pagos ya cobrados** (guardan su importe y su
+  vencimiento); el nombre sí cambia en todos lados. La UI lo avisa.
+- Eliminar (`DELETE /planes/{id}`): es el único borrado real, así que acá sí
+  dice "eliminar". Con pagos, el backend responde **400** (no 409, como decía
+  el contrato) y se muestra tal cual.
+- Invalida `['planes']` para que el cobro tome el precio nuevo de inmediato
+  (si no, el `staleTime` de 5 minutos lo dejaba cobrando con el viejo); la
+  edición invalida además `['socios']` y `['pagos']` por el nombre.
+- GERENCIA ve los planes pero no los botones (403 del backend si lo intenta).
+
 ## 5. Orden sugerido
 
 1. **W1** (sacar los mocks) — sin esto no se puede verificar nada de lo demás.
@@ -549,3 +569,31 @@ Lo que se pide, de más urgente a menos:
 **Impacto en el front.** Ninguno en el código: ya está hecho del lado de la
 web (`vercel.json`, `VITE_API_URL` vacía en producción, proxy de Vite para
 `pnpm dev:prod`).
+
+#### B9 — El filtro JWT no debería validar el Bearer en los endpoints públicos de auth — RESUELTO en el backend el 2026-09-25 (sin commitear)
+
+**Qué pasa.** `JwtAuthenticationFilter` valida cualquier `Authorization: Bearer`
+que llegue, sin `shouldNotFilter`, así que en una ruta `permitAll` un token
+vencido corta con **401** antes del controller. En `/usuarios/logout` y
+`/clientes/logout` eso significaba que el logout no revocaba nada: la web
+mandaba el Bearer, y con más de 30 minutos sin uso la cookie de refresh
+sobrevivía. En la PC compartida del mostrador, el siguiente entraba con F5 como
+la persona anterior (encontrado en la revisión de seguridad del 25/09).
+
+**Del lado del front ya está resuelto**: el logout no manda `Authorization`
+(`auth/api.ts`). Lo que se pide es que el backend no dependa de eso:
+
+- `shouldNotFilter` (o ignorar un token inválido) en login, refresh, logout y
+  registro de los dos portales. Un Bearer vencido en una ruta pública no es
+  motivo para rechazarla.
+- Test: `POST /usuarios/logout` con un Bearer vencido y la cookie → 200, y la
+  cookie queda revocada.
+
+**Impacto en el front.** Ninguno.
+
+**Cómo se resolvió** (revisión del backend del 25/09): el filtro ya no corta
+la request con un token inválido; la deja seguir como anónima y decide la regla
+de `SecurityConfig`. En una ruta protegida sigue siendo 401 con "Token inválido
+o expirado" (el entry point lo distingue con un atributo de la request), así que
+el interceptor del front no cambia. Es más general que `shouldNotFilter` en
+cuatro rutas: sirve para cualquier ruta pública.

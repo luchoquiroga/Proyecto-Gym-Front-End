@@ -6,7 +6,8 @@ import { AlertCircle, Loader2 } from 'lucide-react';
 import { Modal } from '../../../components/ui/Modal';
 import { CampoTexto } from '../../../components/ui/CampoTexto';
 import { aplicarErroresDelServidor } from '../../../lib/erroresFormulario';
-import { logout } from '../../../auth/api';
+import { logoutDeTodo } from '../../../auth/api';
+import { avisarCierreDeSesion } from '../../../auth/sincronizacion';
 import { useSesion } from '../../../auth/sesion';
 import { RUTAS_LOGIN } from '../../../auth/rutas';
 import { useCambiarContrasena } from '../hooks';
@@ -57,8 +58,10 @@ export const CambiarContrasena = ({ onCerrar }: { onCerrar: () => void }) => {
       return;
     }
 
-    // La cookie ya fue revocada por el cambio; el logout es para prolijidad.
-    await logout('staff');
+    // El cambio ya revocó todas las sesiones de la cuenta en el servidor: la
+    // cookie que queda no sirve para nada, así que si este logout falla no hay
+    // sesión viva que proteger. Es para borrarla, y la de socio si hubiera.
+    await logoutDeTodo().catch(() => undefined);
     const estado: AvisoDeLogin = {
       aviso: 'Tu contraseña se cambió y se cerraron todas tus sesiones. Ingresá con la nueva.',
       nombre: principal?.nombre ?? '',
@@ -67,6 +70,7 @@ export const CambiarContrasena = ({ onCerrar }: { onCerrar: () => void }) => {
     // de la ruta mandaría al login sin el aviso.
     navigate(RUTAS_LOGIN.staff, { replace: true, state: estado });
     cerrarSesion();
+    avisarCierreDeSesion();
   });
 
   return (

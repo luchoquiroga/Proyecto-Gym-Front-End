@@ -6,10 +6,13 @@ import { z } from 'zod';
  * `ClienteRegistroRequest` del backend, que es el que decide.
  */
 
+const LARGO_MAXIMO_EMAIL = 150;
+
 const email = z
   .string()
   .trim()
   .min(1, 'El email es obligatorio')
+  .max(LARGO_MAXIMO_EMAIL, `El email no puede superar los ${LARGO_MAXIMO_EMAIL} caracteres`)
   .pipe(z.email('El email no tiene un formato válido'));
 
 // El login NO valida largo, igual que el backend: una cuenta creada antes de la
@@ -17,14 +20,20 @@ const email = z
 const contrasenaLogin = z.string().min(1, 'La contraseña es obligatoria');
 
 const LARGO_MINIMO_CONTRASENA = 8;
+/** BCrypt solo usa los primeros 72 bytes: el backend rechaza una más larga. */
+const LARGO_MAXIMO_CONTRASENA = 72;
 
-/** Espejo del `@Size(min = 8)` de `ClienteRegistroRequest` (Fase 9 del backend). */
+/** Espejo del `@Size(min = 8, max = 72)` de `ClienteRegistroRequest`. */
 const contrasenaNueva = z
   .string()
   .min(1, 'La contraseña es obligatoria')
   .min(
     LARGO_MINIMO_CONTRASENA,
     `La contraseña debe tener al menos ${LARGO_MINIMO_CONTRASENA} caracteres`,
+  )
+  .max(
+    LARGO_MAXIMO_CONTRASENA,
+    `La contraseña no puede superar los ${LARGO_MAXIMO_CONTRASENA} caracteres`,
   );
 
 export const loginSocioSchema = z.object({ email, contrasena: contrasenaLogin });

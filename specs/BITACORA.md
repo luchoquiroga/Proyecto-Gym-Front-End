@@ -7,24 +7,32 @@ no coinciden, mandan ellos.
 
 Se actualiza **al terminar cada tramo**, no al final de todo.
 
-## Estado al 2026-09-24
+## Estado al 2026-09-25 (cierre del día)
 
-- **La web está completa para el alcance definido y probada en pantalla.**
-  Los trece tickets de UI (W1–W13) están hechos, y los pasos 0 a 7 de
-  `STACK.md` §7 también. El 24/09 el dueño recorrió la web entera contra el
-  backend local (ver el historial) y todo dio lo esperado.
-- **El backend está terminado** para el alcance definido: nueve fases
-  cerradas (la 9 fueron los pedidos del front, B1–B5), desplegado en Render
-  desde `master`. Quedan dos pedidos chicos que **no bloquean nada**: B6 y B7
-  (`TICKETS.md` §6).
+- **La web está completa para el alcance definido y lista para ser el MVP.**
+  El 25/09 se encontró que faltaba el ABM de planes de ADMIN (nunca había
+  tenido ticket): se hizo como **W14**, probado en pantalla con ADMIN (falta la
+  pasada con GERENCIA). W1–W13 están hechos y probados (el 24/09 el dueño
+  recorrió la web entera contra el backend local), y los pasos 0 a 7 de
+  `STACK.md` §7 también.
+- **Revisión de seguridad y casos límite hecha el 25/09**, en los dos repos. La
+  vulnerabilidad del logout (la sesión quedaba viva en la PC del mostrador)
+  está arreglada de las dos puntas: el front ya no manda el Bearer y el
+  backend ya no depende de eso (B9). `pnpm test` corre **40 tests**.
+- **El backend está commiteado y pusheado** en su `RamaLuciano`: `1b53fa2`
+  (B6, B7 y B8.1), `cea463b` (logout con token vencido + casos borde),
+  `4f36ce8` (Swagger apagado en producción, BCrypt aunque la cuenta no exista)
+  y `6a178d8`. **Swagger solo existe en local**: `http://localhost:8080/swagger-ui/index.html`.
 - **Las tres áreas funcionan**: mostrador (GERENCIA: socios y cobrar),
-  administración (ADMIN: además dashboard, pagos y cuentas de staff) y el
-  portal del socio (login, registro con código, días restantes).
+  administración (ADMIN: además dashboard, pagos, planes y cuentas de staff) y
+  el portal del socio (login, registro con código, días restantes).
 - **El stack se achicó respecto de lo planeado**: `@tanstack/react-table` y
   `recharts` se descartaron (`STACK.md` §2.2 y §2.4); lo que hacían lo cubren
-  `lib/useOrden.ts` y un SVG propio. `pnpm test` corre 31 tests.
-- **El escritorio (paso 8) ya puede empezar**: la condición era que la web
-  cubriera lo que hace la app Swing, y la cubre.
+  `lib/useOrden.ts` y un SVG propio.
+- **El escritorio (paso 8) ya puede empezar**: falta instalar Rust y las Build
+  Tools de C++. **La mobile sigue congelada** (`ARQUITECTURA-APPS.md` §2.1,
+  decisión 4): retomarla es reabrir esa decisión y resolver dónde vive la
+  sesión fuera del navegador (§6 de ese documento).
 
 ## Pasos
 
@@ -43,47 +51,52 @@ y son los que más deuda sacan.
 | 7 | Tests del interceptor y de los guards | **hecho** (23/09) — `pnpm test`, 31 tests |
 | 8 | Shell de escritorio (repo aparte) | **en curso** — 8.0 (publicar la web) preparado del lado del front |
 
-## Abierto al 2026-09-24 (cierre del día)
+## Abierto al 2026-09-25 (cierre del día)
 
 **Para retomar, en este orden:**
 
-1. **Instalar Rust y las Build Tools de C++** (el dueño, el 25/09). Revisado el
-   24/09: WebView2 ya está (v153); faltan las dos cosas. Con `winget`:
+1. **Instalar Rust y las Build Tools de C++** (el dueño). Revisado el 25/09:
+   WebView2 ya está (v153), winget también (v1.29); faltan las dos cosas:
    ```
    winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
    winget install --id Rustlang.Rustup
    ```
    Piden administrador y bajan varios GB. Después, **reabrir Claude Code** (para
    el `PATH` nuevo) y confirmar con `cargo --version`.
-2. **Paso 8.2, el shell con Tauri**, apenas esté Rust. **No depende del
+2. **Pasada de W14 con GERENCIA**: entrar con esa cuenta y confirmar que en
+   Planes no aparecen crear, editar ni eliminar.
+3. **Aplicar B6 y B7 en el front** (el backend los entregó en `1b53fa2`):
+   - B6: cambiar solo `useGananciasDeMeses` (`features/dashboard/hooks.ts`)
+     de 12 peticiones a `GET /dashboard/ganancias-por-mes`, y sumar el
+     endpoint a `CONTRATO-API.md` (leer antes el controller real).
+   - B7: en `CONTRATO-API.md` §3 ("Paginación"), cambiar "un campo inexistente
+     responde 500" por el 400. Sin cambios de código.
+4. **Paso 8.2, el shell con Tauri**, apenas esté Rust. **No depende del
    hosting**: repo nuevo `Gym-Escritorio` al lado de este, sin UI propia;
    `devUrl` = `http://localhost:5173` (se prueba ya contra el backend local,
    cuyo CORS acepta ese origen) y la URL de producción como un valor a
    completar. La página cargada no recibe ningún permiso de Tauri. A probar:
    login, recarga, y **cerrar y reabrir la app sin perder la sesión** (la
    cookie de refresh tiene `Max-Age`, así que WebView2 la guarda en disco).
-3. **Cuando el backend entregue B6**: cambiar solo `useGananciasDeMeses`
-   (`features/dashboard/hooks.ts`) de 12 peticiones a una, y sumar el
-   endpoint a `CONTRATO-API.md`.
-4. **Cuando el backend entregue B7**: en `CONTRATO-API.md` §3 ("Paginación"),
-   cambiar "un campo inexistente responde 500" por el 400. Sin cambios de
-   código.
+5. **Después del MVP** (casos 7, 9 y 10 de la revisión del 25/09): varias
+   pestañas refrescando a la vez, el motivo del cierre de una cuenta dada de
+   baja, y un `?pagina=` fuera de rango en Pagos. Sin probar en pantalla: la
+   pantalla de arranque con el backend apagado y el cobro incierto.
 
 **En manos de otros:**
 
-- **Backend**: el dueño le pasó **B6, B7 y B8** el 24/09, con la indicación de
-  hacer **de B8 solo el punto 1 (el rate limit)** por ahora. B8.1 no cambia
-  nada del front. Los puntos 2 a 4 de B8 (CORS con el dominio de la web,
-  `SameSite=Lax`, cold start) esperan al hosting.
-- **Hosting de la web: en pausa, lo decide el dueño del gimnasio** (si paga o
-  no). El lado del front del paso 8.0 ya está hecho (`vercel.json`, API
-  relativa en producción, proxy de Vite para `pnpm dev:prod`). Si se elige
-  otro proveedor, `vercel.json` se reemplaza por su equivalente de rewrite; el
-  resto sirve igual. Hasta que se decida quedan en espera **8.1** (probar la
-  sesión en la URL publicada) y **8.3** (el instalador, que lleva adentro la
-  URL de producción). El cold start de Render (>90 s medido en plan gratis)
-  es uno de los argumentos para esa charla.
-- **Commit y push del 8.0 y de esta bitácora**: los hace el dueño.
+- **Producción: front y back salen juntos.** El front ya espera los topes y
+  los errores nuevos del backend (`cea463b`). Los puntos 2 a 4 de B8 (CORS con
+  el dominio de la web, `SameSite=Lax`, cold start) esperan al hosting.
+- **Hosting de la web**: la idea del dueño es empezar con **Vercel gratis** y
+  pasar después a un hosting pago. Ojo: el plan Hobby de Vercel es para uso no
+  comercial, sirve para probar pero no para que el gimnasio cobre con él. El
+  lado del front del paso 8.0 ya está hecho (`vercel.json`, API relativa en
+  producción, proxy de Vite para `pnpm dev:prod`). Si se elige otro proveedor,
+  `vercel.json` se reemplaza por su equivalente de rewrite. Esperan al hosting
+  **8.1** (probar la sesión en la URL publicada) y **8.3** (el instalador, que
+  lleva adentro la URL de producción).
+- **Push**: lo hace el dueño.
 
 **Siguen abiertos de antes:**
 
@@ -130,6 +143,83 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-25 (tercer tramo)** — **El front, a tono con la revisión del
+  backend** (casos borde + B9, en el working tree de `RamaLuciano` del backend,
+  sin commitear; 211 tests en verde según su resumen).
+  - Se leyó el diff del backend, no solo el resumen (venía cortado).
+  - **B9 resuelto** en el backend. El front sigue sin mandar el Bearer en el
+    logout: no lo necesita.
+  - **Espejo en `zod` de los topes nuevos**, con los mismos mensajes:
+    contraseñas de 8 a 72 (cuenta, staff, registro del socio); socio con
+    `nombre`/`apellido` hasta 100 y `telefono` hasta 50; email hasta 150;
+    nombre de staff hasta 100; plan con nombre hasta 100, precio hasta
+    1.000.000.000 y duración hasta 3660 días; cobro con monto hasta
+    1.000.000.000 y **fecha de pago no futura** (además `max` en el input de
+    fecha).
+  - La búsqueda vacía (400 nuevo) no hacía falta tocarla: el front solo
+    busca con texto.
+  - `CONTRATO-API.md` al día: 400/404/405/415 que antes eran 500, rate limit
+    del registro, email en minúsculas, topes, fecha futura y el bloqueo del
+    cobro concurrente.
+  - Verificado: `pnpm build`, `pnpm lint` y `pnpm test` (40) en verde.
+
+- **2026-09-25 (segundo tramo)** — **Revisión de seguridad y casos límite
+  antes del MVP**, y el arreglo de los primeros tres grupos. Sin dependencias
+  nuevas.
+  - **Vulnerabilidad: el logout no cerraba la sesión.** Mandaba el Bearer, y
+    con el token vencido el filtro JWT del backend respondía 401 antes del
+    logout; el front se tragaba el error y mostraba el login con la cookie
+    viva. En la PC del mostrador, F5 entraba como la persona anterior (también
+    ADMIN). Ahora `logout` no manda `Authorization`, **cierra los dos
+    portales** (`logoutDeTodo`) y tira el error: `auth/useCerrarSesion.ts`
+    solo manda al login si el servidor confirmó, y si no, avisa y deja
+    reintentar. Pedido **B9** al backend para que no dependa del front.
+  - **Otras pestañas**: el logout se avisa por `BroadcastChannel`
+    (`auth/sincronizacion.ts`) y las demás se cierran solas.
+  - **Cache**: `queryClient` pasó a `api/queryClient.ts` y la sesión lo vacía
+    al cerrar y cuando entra otra persona (no en el silent refresh).
+  - **Login en un portal cierra la sesión del otro**, que si no quedaba viva
+    en su cookie.
+  - **Un error pasajero ya no saca al usuario**: el interceptor y el arranque
+    cierran la sesión solo si el refresh responde 401/403
+    (`sesionRechazada`). En el arranque, si el servidor no responde, se
+    muestra el error con "Reintentar" en vez del login, y a los 8 s se avisa
+    que el servidor puede estar arrancando.
+  - **Timeout de 100 s** en las dos instancias de axios (`TIMEOUT_MS`), con
+    mensaje propio, y mensajes para 502/503/504.
+  - **Cobro con resultado incierto** (sin respuesta o 5xx): se refresca el
+    listado igual y el botón queda bloqueado, con el aviso de mirar el
+    vencimiento del socio antes de volver a cobrar (`resultadoIncierto`).
+  - Verificado: `pnpm build`, `pnpm lint` y `pnpm test` (**40**, antes 31).
+    En Chrome contra el backend local: el logout llama a los dos portales
+    (200), la otra pestaña vuelve sola al login y el F5 después del logout se
+    queda en el login (refresh 401).
+  - **Sin probar en pantalla**: la pantalla de arranque con el backend
+    apagado, y el cobro incierto (hace falta cortar el backend en el medio).
+  - **Quedan para después del MVP** (casos 7, 9 y 10 de la revisión): varias
+    pestañas refrescando a la vez, el motivo del cierre de una cuenta dada de
+    baja, y un `?pagina=` fuera de rango en Pagos.
+
+- **2026-09-25** — **Revisión del alcance antes de producción, y W14.**
+  - Se comparó la web contra `ARQUITECTURA-APPS.md` §2.1 (no contra los
+    tickets). Todo lo de GERENCIA y ADMIN estaba, salvo **planes: modificar y
+    eliminar**, que el alcance pedía y ningún ticket W recogió. La bitácora
+    decía "completa para el alcance" y no lo estaba.
+  - **W14**: `FormularioPlan` (alta y edición) y `ConfirmarEliminacionPlan`
+    en `features/planes/components/`, botones solo para ADMIN en
+    `PlanesPage`. Sin dependencias nuevas.
+  - **Corrección del contrato**: borrar un plan con pagos es **400**, no 409
+    (`PlanServiceImpl.eliminar` → `IllegalArgumentException`). Arreglado en
+    `CONTRATO-API.md` §2 y §3.
+  - Verificado: `pnpm build`, `pnpm lint` y `pnpm test` (31) en verde.
+  - **Probado en pantalla con ADMIN contra el backend local** (Claude in
+    Chrome, sesión iniciada por el dueño): validación del formulario vacío;
+    alta de "Prueba W14"; edición del precio, y el formulario de cobro tomó el
+    precio nuevo al instante (sin registrar el pago); eliminación del plan de
+    prueba; y el intento de borrar "Pase Mensual" mostró el mensaje del
+    backend tal cual y no borró nada. La base quedó como estaba.
+  - **Falta**: entrar con GERENCIA y confirmar que no aparecen los botones.
 
 - **2026-09-24 (después del cierre)** — **Los `.env` salen del repo**, a pedido
   del dueño. `.gitignore` ya los listaba pero no servía: estaban commiteados, y

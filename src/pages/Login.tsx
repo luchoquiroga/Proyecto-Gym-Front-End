@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircle, CircleCheck, Eye, EyeOff, Lock, User } from 'lucide-react';
-import { loginStaff } from '../auth/api';
+import { loginStaff, logout } from '../auth/api';
 import { useSesion } from '../auth/sesion';
 import { RUTAS_LOGIN, rutaInicial } from '../auth/rutas';
 import { mensajeDeError } from '../lib/errores';
@@ -33,6 +33,9 @@ export const Login = () => {
     mutationFn: loginStaff,
     onSuccess: ({ principal, accessToken }) => {
       iniciarSesion('staff', principal, accessToken);
+      // Si en este navegador quedó abierta la sesión de un socio, se cierra:
+      // si no, su cookie seguiría viva y bastaría volver a ese portal para usarla.
+      void logout('socio').catch(() => undefined);
 
       const origen = estado.from?.pathname;
       const destino = origen?.startsWith('/staff') ? origen : rutaInicial(principal);

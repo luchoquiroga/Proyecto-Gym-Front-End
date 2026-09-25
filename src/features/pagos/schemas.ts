@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { formatearPesos } from '../../lib/formato';
-import { sumarDias } from '../../lib/fechas';
+import { hoyIso, sumarDias } from '../../lib/fechas';
 import type { Plan } from '../planes/types';
 
 /**
@@ -11,6 +11,9 @@ import type { Plan } from '../planes/types';
  * Se arma con los planes porque la regla que más importa depende del plan
  * elegido: no hay pago parcial, un importe menor al precio se rechaza entero.
  */
+/** Tope de cordura del backend: sin él, un 1e400 llegaba como Infinity a la caja del mes. */
+const MONTO_MAXIMO = 1_000_000_000;
+
 export const crearCobroSchema = (planes: Plan[]) =>
   z
     .object({
@@ -19,8 +22,14 @@ export const crearCobroSchema = (planes: Plan[]) =>
       planId: z.number({ error: 'Elegí un plan' }),
       montoAbonado: z
         .number({ error: 'El importe es obligatorio' })
-        .positive('El importe debe ser mayor a cero'),
-      fechaPago: z.iso.date({ error: 'La fecha de pago es obligatoria' }),
+        .positive('El importe debe ser mayor a cero')
+        .max(MONTO_MAXIMO, 'El monto abonado no puede superar los 1.000.000.000'),
+      // Es el día en que entró la plata: no puede ser futura. "Hoy" es el del
+      // navegador, que en el gimnasio es la misma zona que el `Clock` del backend.
+      // Las fechas ISO se comparan bien como texto.
+      fechaPago: z.iso
+        .date({ error: 'La fecha de pago es obligatoria' })
+        .refine((fecha) => fecha <= hoyIso(), 'La fecha de cobro no puede ser posterior a hoy.'),
     })
     .superRefine(({ planId, montoAbonado }, ctx) => {
       const plan = planes.find((p) => p.id === planId);
