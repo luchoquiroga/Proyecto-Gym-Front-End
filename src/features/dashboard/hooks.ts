@@ -1,6 +1,6 @@
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import type { AnioMes } from '../../lib/fechas';
-import { obtenerGananciasMensuales, obtenerSociosPorEstado } from './api';
+import { obtenerGananciasMensuales, obtenerGananciasPorMes, obtenerSociosPorEstado } from './api';
 
 export const useGananciasMensuales = (anio?: number, mes?: number) =>
   useQuery({
@@ -9,35 +9,33 @@ export const useGananciasMensuales = (anio?: number, mes?: number) =>
     staleTime: 1000 * 60 * 5,
   });
 
+const aAnioMes = ({ anio, mes }: AnioMes) => `${anio}-${String(mes).padStart(2, '0')}`;
+
 /**
- * Las ganancias de varios meses, una petición por mes y en paralelo: el backend
- * todavía no tiene un endpoint que devuelva la serie (pedido anotado en la
- * bitácora). Usa la misma clave que `useGananciasMensuales` con ese mes, así
- * que comparte cache con el resumen del desglose de pagos.
+ * Las ganancias de varios meses consecutivos en una sola petición
+ * (`/ganancias-por-mes`, B6). El rango se manda explícito, con el primer y el
+ * último mes de `meses`, para que el eje del gráfico y la respuesta salgan del
+ * mismo "hoy" (el del navegador) y no del reloj del servidor.
  *
- * `combine` junta las 12 en un solo estado: si una falla, falla la serie
- * entera. Un gráfico con un mes de menos mentiría: parecería que ese mes no
- * entró plata.
+ * El backend trae también los meses en cero, así que la serie llega completa o
+ * no llega: no hay que decidir qué hacer si falta uno.
  */
-export const useGananciasDeMeses = (meses: AnioMes[]) =>
-  useQueries({
-    queries: meses.map(({ anio, mes }) => ({
-      queryKey: ['dashboard', 'ganancias', { anio, mes }],
-      queryFn: () => obtenerGananciasMensuales(anio, mes),
-      staleTime: 1000 * 60 * 5,
-    })),
-    combine: (resultados) => {
-      const conError = resultados.find((r) => r.isError);
-      const datos = resultados.flatMap((r) => (r.data ? [r.data] : []));
-      return {
-        // Solo con los doce: una serie incompleta no se dibuja.
-        datos: datos.length === resultados.length ? datos : undefined,
-        cargando: resultados.some((r) => r.isLoading),
-        error: conError?.error ?? null,
-        reintentar: () => resultados.forEach((r) => r.isError && r.refetch()),
-      };
-    },
+export const useGananciasDeMeses = (meses: AnioMes[]) => {
+  const desde = meses.length ? aAnioMes(meses[0]) : '';
+  const hasta = meses.length ? aAnioMes(meses[meses.length - 1]) : '';
+  const consulta = useQuery({
+    queryKey: ['dashboard', 'ganancias-por-mes', { desde, hasta }],
+    queryFn: () => obtenerGananciasPorMes(desde, hasta),
+    enabled: meses.length > 0,
+    staleTime: 1000 * 60 * 5,
   });
+  return {
+    datos: consulta.data,
+    cargando: consulta.isLoading,
+    error: consulta.error,
+    reintentar: () => void consulta.refetch(),
+  };
+};
 
 /**
  * Cuelga de `['dashboard']` para que la invaliden las mismas escrituras que

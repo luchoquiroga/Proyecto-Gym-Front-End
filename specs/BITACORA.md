@@ -29,8 +29,9 @@ Se actualiza **al terminar cada tramo**, no al final de todo.
 - **El stack se achicó respecto de lo planeado**: `@tanstack/react-table` y
   `recharts` se descartaron (`STACK.md` §2.2 y §2.4); lo que hacían lo cubren
   `lib/useOrden.ts` y un SVG propio.
-- **El escritorio (paso 8) ya puede empezar**: falta instalar Rust y las Build
-  Tools de C++. **La mobile sigue congelada** (`ARQUITECTURA-APPS.md` §2.1,
+- **El escritorio (paso 8.2) está armado**: repo `Gym-Escritorio` (Tauri v2,
+  sin commitear), compila, abre la web de `localhost:5173` y **sostiene la
+  sesión** contra el backend local (probado el 25/09). **La mobile sigue congelada** (`ARQUITECTURA-APPS.md` §2.1,
   decisión 4): retomarla es reabrir esa decisión y resolver dónde vive la
   sesión fuera del navegador (§6 de ese documento).
 
@@ -49,36 +50,22 @@ y son los que más deuda sacan.
 | 5 | Cobrar, y portal del socio con los días restantes | **hecho** (22/09) — W5 y W10 |
 | 6 | Dashboard de ADMIN | **hecho** (23/09) — gráfico en SVG propio, sin `recharts` |
 | 7 | Tests del interceptor y de los guards | **hecho** (23/09) — `pnpm test`, 31 tests |
-| 8 | Shell de escritorio (repo aparte) | **en curso** — 8.0 (publicar la web) preparado del lado del front |
+| 8 | Shell de escritorio (repo aparte) | **en curso** — 8.0 preparado del lado del front; 8.2 armado y probado (25/09); esperan al hosting 8.1 y 8.3 |
 
 ## Abierto al 2026-09-25 (cierre del día)
 
 **Para retomar, en este orden:**
 
-1. **Instalar Rust y las Build Tools de C++** (el dueño). Revisado el 25/09:
-   WebView2 ya está (v153), winget también (v1.29); faltan las dos cosas:
-   ```
-   winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
-   winget install --id Rustlang.Rustup
-   ```
-   Piden administrador y bajan varios GB. Después, **reabrir Claude Code** (para
-   el `PATH` nuevo) y confirmar con `cargo --version`.
-2. **Pasada de W14 con GERENCIA**: entrar con esa cuenta y confirmar que en
-   Planes no aparecen crear, editar ni eliminar.
-3. **Aplicar B6 y B7 en el front** (el backend los entregó en `1b53fa2`):
-   - B6: cambiar solo `useGananciasDeMeses` (`features/dashboard/hooks.ts`)
-     de 12 peticiones a `GET /dashboard/ganancias-por-mes`, y sumar el
-     endpoint a `CONTRATO-API.md` (leer antes el controller real).
-   - B7: en `CONTRATO-API.md` §3 ("Paginación"), cambiar "un campo inexistente
-     responde 500" por el 400. Sin cambios de código.
-4. **Paso 8.2, el shell con Tauri**, apenas esté Rust. **No depende del
-   hosting**: repo nuevo `Gym-Escritorio` al lado de este, sin UI propia;
-   `devUrl` = `http://localhost:5173` (se prueba ya contra el backend local,
-   cuyo CORS acepta ese origen) y la URL de producción como un valor a
-   completar. La página cargada no recibe ningún permiso de Tauri. A probar:
-   login, recarga, y **cerrar y reabrir la app sin perder la sesión** (la
-   cookie de refresh tiene `Max-Age`, así que WebView2 la guarda en disco).
-5. **Después del MVP** (casos 7, 9 y 10 de la revisión del 25/09): varias
+1. **Mirar el gráfico de ingresos con ADMIN** después de B6: que muestre los
+   12 meses (también los en cero) y que "Reintentar" funcione con el backend
+   apagado.
+2. **Commit inicial de `Gym-Escritorio`** (lo decide el dueño) y crear su
+   remoto. Lo que quedó armado: sin UI propia, `devUrl` = `localhost:5173`,
+   `frontendDist` = URL de producción **a completar** (8.3), sin permisos de
+   Tauri para la página (`capabilities: []`, sin plugins ni comandos),
+   instalador NSIS, identificador `ar.gimnasio.escritorio`. Las reglas están
+   en el `AGENTS.md` de ese repo.
+3. **Después del MVP** (casos 7, 9 y 10 de la revisión del 25/09): varias
    pestañas refrescando a la vez, el motivo del cierre de una cuenta dada de
    baja, y un `?pagina=` fuera de rango en Pagos. Sin probar en pantalla: la
    pantalla de arranque con el backend apagado y el cobro incierto.
@@ -143,6 +130,32 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-25 (cuarto tramo)** — **Shell de escritorio probado** y un
+  arreglo de layout.
+  - **Probado a mano por el dueño en la ventana de Tauri**, con la web en :5173
+    y el API local: login, F5 sin perder la sesión, cerrar y reabrir la app
+    entrando directo (WebView2 guarda la cookie de refresh en disco), y logout
+    que al reabrir pide el login otra vez. También la pasada de W14 con
+    GERENCIA: en Planes no aparecen crear, editar ni eliminar.
+  - **El sidebar del staff queda fijo en escritorio** (`md:sticky md:top-0
+    md:h-screen` en `StaffLayout`). Antes era `md:static` y se estiraba con la
+    página, así que con una lista de socios larga "Cerrar sesión" quedaba al
+    final de todo. En celular no cambia: ya era un panel `fixed`.
+  - **B6 y B7 aplicados** (el backend los entregó en `1b53fa2`).
+    `useGananciasDeMeses` pasó de 12 peticiones a una sola a
+    `GET /dashboard/ganancias-por-mes`, con `desde` y `hasta` explícitos
+    (el primer y el último mes del eje, así el gráfico y la respuesta salen
+    del mismo "hoy"). Se fue el `combine` de "si falla uno, falla todo": el
+    backend ya trae los meses en cero. El hook devuelve la misma forma, así
+    que el gráfico, la tabla y los estados no cambiaron. Deja de compartir
+    cache con `useGananciasMensuales`, pero cuelga de `['dashboard']`, así que
+    lo invalidan las mismas escrituras. En `CONTRATO-API.md` quedó el endpoint
+    nuevo, y el `sort` con un campo inexistente ahora figura como 400 (también
+    en los comentarios de `useOrden` y `socios/api.ts`).
+  - Verificado: `pnpm lint`, `pnpm build` y `pnpm test` (40) en verde; el
+    endpoint existe en el backend local (401 sin token). **Falta mirar el
+    gráfico del dashboard con ADMIN** para confirmarlo en pantalla.
 
 - **2026-09-25 (tercer tramo)** — **El front, a tono con la revisión del
   backend** (casos borde + B9, en el working tree de `RamaLuciano` del backend,

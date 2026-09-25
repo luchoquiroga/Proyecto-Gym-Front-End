@@ -6,7 +6,7 @@ import type { Socio, SocioAltaResponse, SocioRequest } from './types';
 
 /**
  * Por qué se puede ordenar el padrón, y a qué campos de la ENTIDAD `Cliente`.
- * Lista cerrada: un campo que no existe hace que el backend responda 500.
+ * Lista cerrada: un campo que no existe hace que el backend responda 400.
  * "Vence" y "Plan" no están porque se calculan de los pagos; "Estado" tampoco,
  * porque la base lo ordenaría alfabético (ACTIVO, INACTIVO, MOROSO), que no le
  * sirve a nadie.
