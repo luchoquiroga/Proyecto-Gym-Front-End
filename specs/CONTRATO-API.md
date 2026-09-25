@@ -350,6 +350,27 @@ con mensaje). Son mensajes para mostrar, no casos a prevenir adivinando.
 Es un **agregado de un mes**. El desglose del mes (los pagos uno por uno, como
 pide el alcance del dashboard) sale de `GET /pagos?desde=&hasta=`.
 
+`GET /dashboard/ganancias-por-mes?desde=AAAA-MM&hasta=AAAA-MM` (B6, `1b53fa2`),
+la serie para el gráfico en una sola llamada:
+
+```jsonc
+[
+  { "anio": 2025, "mes": 10, "totalGanancias": 420000, "cantidadPagos": 12 },
+  { "anio": 2025, "mes": 11, "totalGanancias": 0,      "cantidadPagos": 0  },
+  // ...
+  { "anio": 2026, "mes": 9,  "totalGanancias": 215000, "cantidadPagos": 6  }
+]
+```
+
+- Un elemento por mes, del más viejo al más nuevo, **también los meses sin
+  cobros** (en cero). Cada uno es el mismo objeto que `ganancias-mensuales` y
+  sale del mismo método del service: un mes suma lo mismo en los dos.
+- `desde` y `hasta` inclusive. Sin parámetros: los últimos 12 meses hasta el
+  actual, con el "hoy" de Argentina. El front los manda siempre, para que el
+  eje del gráfico y la respuesta salgan del mismo mes.
+- **400 con `mensaje`** si el formato no es `AAAA-MM` (nombra el parámetro),
+  si `desde` es posterior a `hasta`, o si el rango pasa de **24 meses**.
+
 `GET /dashboard/socios` (Fase 9, B5), cuántos socios hay **hoy** en cada estado:
 
 ```jsonc
@@ -379,10 +400,11 @@ servicios se lo pasan tal cual al repositorio (verificado el 23/09). Dos cosas:
   `clientes`. En pagos, `fechaPago`, `fechaVencimiento` y `montoAbonado`.
 - Sin `sort`, el orden es el de la base (en la práctica, por id), que no está
   garantizado.
-- **Un campo inexistente responde 500** (verificado el 23/09), no 400. Por eso
-  el front solo manda campos de una lista cerrada por listado
-  (`ORDENABLES_*` en el `api.ts` de cada feature), nunca algo que venga de un
-  input o de la URL.
+- **Un campo inexistente responde 400** "No se puede ordenar por '<campo>'"
+  (B7, `1b53fa2`; antes era 500). Igual el front solo manda campos de una
+  lista cerrada por listado (`ORDENABLES_*` en el `api.ts` de cada feature),
+  nunca algo que venga de un input o de la URL: el backend no tiene lista
+  blanca, así que `sort` podría ordenar por cualquier campo interno.
 - Las propiedades anidadas funcionan (`sort=cliente.apellido,asc` en pagos), y
   el orden de texto no distingue mayúsculas.
 - `/clientes/buscar` **no** acepta `sort`: es una lista plana.

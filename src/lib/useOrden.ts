@@ -18,7 +18,7 @@ export interface Orden<C extends string> {
  * `columnas` es la lista cerrada de lo que se puede ordenar, y a qué campos de
  * la ENTIDAD corresponde cada una (no del DTO: `fechaVencimiento` del socio,
  * por ejemplo, se calcula y no se puede ordenar). Es cerrada a propósito: un
- * campo que no existe hace que el backend responda 500.
+ * campo que no existe hace que el backend responda 400.
  *
  * @param desempate se agrega al final para que dos filas iguales no cambien de
  *   lugar entre una página y la otra (sin él, un socio puede aparecer en la
