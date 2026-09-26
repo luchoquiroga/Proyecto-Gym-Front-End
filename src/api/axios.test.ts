@@ -51,7 +51,7 @@ const refreshStaffFalla = http.post(url('/api/v1/usuarios/refresh'), async () =>
 });
 
 const iniciarCon = (portal: TipoPortal, principal: Principal) =>
-  useSesion.setState({ portal, principal, accessToken: 'viejo', cargandoSesion: false });
+  useSesion.setState({ portal, principal, accessToken: 'viejo', cargandoSesion: false, cerradaPorElServidor: false });
 
 beforeAll(() => servidor.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => servidor.resetHandlers());
@@ -122,6 +122,8 @@ describe('interceptor de axios', () => {
     expect(refreshesStaff).toBe(1);
     expect(useSesion.getState().principal).toBeNull();
     expect(useSesion.getState().accessToken).toBeNull();
+    // El login tiene que poder decir que la cerró el servidor, no el usuario.
+    expect(useSesion.getState().cerradaPorElServidor).toBe(true);
   });
 
   it('si el refresh no llega (503 del proxy), rechaza con su mensaje pero NO cierra la sesión', async () => {
@@ -139,6 +141,7 @@ describe('interceptor de axios', () => {
     expect((error as ErrorApi).status).toBe(503);
     expect((error as ErrorApi).mensaje).toMatch(/no está disponible/);
     expect(useSesion.getState().principal).toEqual(STAFF);
+    expect(useSesion.getState().cerradaPorElServidor).toBe(false);
   });
 
   it('si la petición reintentada vuelve a dar 401, cierra la sesión sin un segundo refresh', async () => {

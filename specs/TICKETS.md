@@ -566,6 +566,29 @@ Lo que se pide, de más urgente a menos:
    minutos) o el plan pago de Render. Documentar la que se elija en
    `DESPLIEGUE.md`.
 
+   **Decidido el 2026-09-25: cron externo, con una condición.** Un cron
+   (cron-job.org) pega cada 10 minutos a `https://<servicio>.onrender.com/ping`,
+   directo y no por Vercel. Las 750 h gratis de Render alcanzan para un
+   servicio prendido todo el mes (720–744 h) si es el único del workspace, y
+   de paso el scheduler de medianoche corre todas las noches. **La condición
+   es la base**: HikariCP 7.0.2 (verificado en el jar) mantiene 10 conexiones
+   abiertas con keepalive cada 2 minutos, así que con el servidor siempre
+   despierto Neon no duerme nunca, y sus 100 CU-h gratis (400 h a 0,25 CU) se
+   terminan cerca del día 16, con la base suspendida hasta el mes siguiente.
+   Hay que dejar que el pool suelte las conexiones sin uso:
+
+   ```properties
+   spring.datasource.hikari.minimum-idle=0
+   spring.datasource.hikari.idle-timeout=60000
+   spring.datasource.hikari.keepalive-time=0
+   ```
+
+   `/ping` no toca la base. Costo: la primera consulta después de una pausa
+   tarda del orden de un segundo más (reconectar y despertar Neon). Además,
+   fijar el compute de Neon en 0,25 CU y mirar el consumo la primera semana:
+   con el mostrador usándolo todo el día se puede llegar al tope igual, y ahí
+   la salida es el plan pago de Neon, no el cron.
+
 **Impacto en el front.** Ninguno en el código: ya está hecho del lado de la
 web (`vercel.json`, `VITE_API_URL` vacía en producción, proxy de Vite para
 `pnpm dev:prod`).

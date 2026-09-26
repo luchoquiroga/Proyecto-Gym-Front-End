@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { CreditCard } from 'lucide-react';
 import { EncabezadoPagina } from '../../../components/ui/EncabezadoPagina';
 import { Paginador } from '../../../components/ui/Paginador';
@@ -19,6 +19,12 @@ const leerEntero = (valor: string | null, min: number, max: number): number | nu
   const numero = Number(valor);
   return valor !== null && Number.isInteger(numero) && numero >= min && numero <= max ? numero : null;
 };
+
+const parametrosDe = (anio: number, mes: number, pagina: number) => ({
+  anio: String(anio),
+  mes: String(mes),
+  pagina: String(pagina),
+});
 
 /**
  * Desglose de un mes: los pagos que componen el total del dashboard (W13), con
@@ -49,11 +55,13 @@ export const PagosPage = () => {
   });
 
   const irA = (nuevoAnio: number, nuevoMes: number, nuevaPagina = 0) =>
-    setParametros({
-      anio: String(nuevoAnio),
-      mes: String(nuevoMes),
-      pagina: String(nuevaPagina),
-    });
+    setParametros(parametrosDe(nuevoAnio, nuevoMes, nuevaPagina));
+
+  // Una página que no existe (un link viejo, la URL tocada a mano) viene vacía
+  // aunque el mes tenga cobros: se salta a la última en vez de mostrar "No hay
+  // cobros", que sería mentira.
+  const ultimaPagina =
+    data && data.contenido.length === 0 && data.totalElementos > 0 ? data.totalPaginas - 1 : null;
 
   // Con otro orden, la página 3 es otra cosa: se vuelve a la primera.
   const ordenarPor = (columna: ColumnaPago) => {
@@ -84,6 +92,8 @@ export const PagosPage = () => {
           <Cargando texto="Trayendo pagos..." />
         ) : isError ? (
           <ErrorDeCarga error={error} onReintentar={() => refetch()} />
+        ) : ultimaPagina !== null ? (
+          <Navigate to={{ search: `?${new URLSearchParams(parametrosDe(anio, mes, ultimaPagina))}` }} replace />
         ) : !data || data.contenido.length === 0 ? (
           <SinDatos titulo={`No hay cobros en ${nombreDeMes(mes)} de ${anio}`} />
         ) : (

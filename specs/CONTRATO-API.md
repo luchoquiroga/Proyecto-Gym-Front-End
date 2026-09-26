@@ -61,7 +61,9 @@ Nunca compares un id sin saber de qué tabla es.
   leer. Por eso todas las llamadas van con `withCredentials: true`.
 - `/refresh` **rota** el refresh token: el anterior queda invalidado. Dos
   refresh en paralelo con la misma cookie → el segundo falla. De ahí que el
-  interceptor tenga cola y un solo refresh en vuelo.
+  interceptor tenga cola y un solo refresh en vuelo, y que entre pestañas
+  login, refresh y logout de un portal pasen por un candado (Web Locks, en
+  `auth/api.ts`).
 - Un refresh token **no sirve como access token**: el filtro lo rechaza fuera de
   `/refresh`.
 

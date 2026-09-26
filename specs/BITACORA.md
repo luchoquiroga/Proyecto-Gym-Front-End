@@ -11,14 +11,16 @@ Se actualiza **al terminar cada tramo**, no al final de todo.
 
 - **La web está completa para el alcance definido y lista para ser el MVP.**
   El 25/09 se encontró que faltaba el ABM de planes de ADMIN (nunca había
-  tenido ticket): se hizo como **W14**, probado en pantalla con ADMIN (falta la
-  pasada con GERENCIA). W1–W13 están hechos y probados (el 24/09 el dueño
-  recorrió la web entera contra el backend local), y los pasos 0 a 7 de
-  `STACK.md` §7 también.
+  tenido ticket): se hizo como **W14**, probado en pantalla con ADMIN y con
+  GERENCIA. W1–W13 están hechos y probados (el 24/09 el dueño recorrió la web
+  entera contra el backend local; el gráfico de ingresos después de B6 lo
+  confirmó el 25/09), y los pasos 0 a 7 de `STACK.md` §7 también.
 - **Revisión de seguridad y casos límite hecha el 25/09**, en los dos repos. La
   vulnerabilidad del logout (la sesión quedaba viva en la PC del mostrador)
   está arreglada de las dos puntas: el front ya no manda el Bearer y el
-  backend ya no depende de eso (B9). `pnpm test` corre **40 tests**.
+  backend ya no depende de eso (B9). Los casos 7, 9 y 10 que habían quedado
+  para después también se hicieron (quinto tramo). `pnpm test` corre **46
+  tests**.
 - **El backend está commiteado y pusheado** en su `RamaLuciano`: `1b53fa2`
   (B6, B7 y B8.1), `cea463b` (logout con token vencido + casos borde),
   `4f36ce8` (Swagger apagado en producción, BCrypt aunque la cuenta no exista)
@@ -56,25 +58,23 @@ y son los que más deuda sacan.
 
 **Para retomar, en este orden:**
 
-1. **Mirar el gráfico de ingresos con ADMIN** después de B6: que muestre los
-   12 meses (también los en cero) y que "Reintentar" funcione con el backend
-   apagado.
-2. **Commit inicial de `Gym-Escritorio`** (lo decide el dueño) y crear su
+1. **Commit inicial de `Gym-Escritorio`** (lo decide el dueño) y crear su
    remoto. Lo que quedó armado: sin UI propia, `devUrl` = `localhost:5173`,
    `frontendDist` = URL de producción **a completar** (8.3), sin permisos de
    Tauri para la página (`capabilities: []`, sin plugins ni comandos),
    instalador NSIS, identificador `ar.gimnasio.escritorio`. Las reglas están
    en el `AGENTS.md` de ese repo.
-3. **Después del MVP** (casos 7, 9 y 10 de la revisión del 25/09): varias
-   pestañas refrescando a la vez, el motivo del cierre de una cuenta dada de
-   baja, y un `?pagina=` fuera de rango en Pagos. Sin probar en pantalla: la
-   pantalla de arranque con el backend apagado y el cobro incierto.
+2. **Sin probar en pantalla** (de la revisión del 25/09): la pantalla de
+   arranque con el backend apagado y el cobro incierto.
 
 **En manos de otros:**
 
 - **Producción: front y back salen juntos.** El front ya espera los topes y
-  los errores nuevos del backend (`cea463b`). Los puntos 2 a 4 de B8 (CORS con
-  el dominio de la web, `SameSite=Lax`, cold start) esperan al hosting.
+  los errores nuevos del backend (`cea463b`). Los puntos 2 y 3 de B8 (CORS con
+  el dominio de la web, `SameSite=Lax`) esperan al hosting. **El cold start
+  (punto 4) se decidió el 25/09**: cron externo a `/ping` más el pool de
+  conexiones configurado para que Neon pueda dormir (detalle en B8). Lo
+  plantea el dueño en el backend.
 - **Hosting de la web**: la idea del dueño es empezar con **Vercel gratis** y
   pasar después a un hosting pago. Ojo: el plan Hobby de Vercel es para uso no
   comercial, sirve para probar pero no para que el gimnasio cobre con él. El
@@ -94,8 +94,9 @@ y son los que más deuda sacan.
     ($1.000) y #9 ($35.000) siguen válidos y suman a septiembre.** El socio 7
     quedó INACTIVO por el bug del estado al anular (arreglado en el backend en
     `de3a0d8`): el estado ya guardado no se corrige solo;
-  - la cuenta de staff `prueba_w7` (id 5, GERENCIA), dada de baja, con
-    contraseña `reseteada123`;
+  - la cuenta de staff `prueba_w7` (id 5, GERENCIA). Al 26/09 está
+    **activa** y su contraseña **ya no es** `reseteada123` (la cambió el
+    dueño en alguna prueba; no se reseteó para no pisarla);
   - lo que el dueño cargó en la prueba en pantalla del 24/09 (un socio con
     cuenta del portal, cobros y alguna anulación);
   - de antes (19/09): el socio Charles Quiroga y la cuenta `gerencia`.
@@ -130,6 +131,55 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-25 (quinto tramo)** — **Los casos 7, 9 y 10 de la revisión**, que
+  habían quedado para después del MVP. Sin dependencias nuevas.
+  - **Caso 7, varias pestañas refrescando a la vez.** La cola del interceptor
+    ordena los refresh de una pestaña, pero la cookie es una sola para todas:
+    al restaurar el navegador con dos pestañas abiertas, las dos refrescaban
+    con la misma cookie, `/refresh` la rotaba y la segunda quedaba en el login.
+    Ahora login, refresh y logout de cada portal pasan por un candado de Web
+    Locks (`conCandado` en `auth/api.ts`, nombre `gym.cookie.<portal>`): la
+    segunda pestaña espera y sale con la cookie ya rotada. De paso, un logout
+    ya no puede terminar antes que un refresh en vuelo que vuelva a dejar la
+    cookie viva en la PC del mostrador. Sin Web Locks se sigue sin candado.
+  - **Caso 9, el motivo del cierre.** El backend responde el mismo 401 para
+    una baja, un cambio de contraseña o una sesión cerrada desde el otro
+    portal, así que el front no puede decir cuál fue. Lo que sí sabe es que no
+    fue el usuario: `cerrarSesion('servidor')` (lo usa el interceptor) deja
+    `cerradaPorElServidor` en el store, y los dos logins muestran
+    `AvisoSesionCerrada`. El de staff dice que consulte con un administrador si
+    sus datos ya no funcionan: sin eso, el empleado dado de baja recibía
+    "credenciales incorrectas" y reintentaba hasta el rate limit. El aviso se
+    borra al volver a entrar.
+  - **Caso 10, `?pagina=` fuera de rango en Pagos.** Una página que no existe
+    viene vacía aunque el mes tenga cobros, y la pantalla decía "No hay cobros
+    en …". Ahora salta a la última página (`<Navigate replace>`). Una página
+    absurda (`?pagina=999999999`) puede terminar en un error del backend, que
+    se muestra como error: no miente.
+  - Verificado: `pnpm build`, `pnpm lint` y `pnpm test` (**46**, antes 40).
+    Los tests del candado se corrieron también con el candado apagado y
+    fallan, así que prueban lo que dicen.
+  - **Probado en Chrome el 26/09** contra el backend local (la ventana estaba
+    oculta, así que por JavaScript sobre el DOM y sin capturas):
+    - Caso 7: dos refresh "crudos" escalonados 0–2 ms dieron 401 en 3 de 10
+      pares; con `refrescarSesion` (candado), 0 de 10. En local la ventana es
+      de 1–2 ms porque la ida y vuelta dura eso; en producción es casi toda la
+      ida y vuelta. Dos pestañas recargadas con 1 ms de diferencia volvieron
+      las dos con la sesión.
+    - Caso 9: cookie revocada en el servidor + access token inválido →
+      `clientes 401`, `refresh 401`, login con el aviso. Con un login fallido
+      el aviso sigue junto a "Credenciales incorrectas"; al entrar se borra.
+      "Cerrar sesión" con el botón no lo muestra, y el F5 posterior queda en
+      el login.
+    - Caso 10: septiembre con `?pagina=50` salta a la 0 (16 registros);
+      enero con `?pagina=3` se queda y dice "No hay cobros" (es verdad).
+      "Atrás" no vuelve a la página 50.
+  - **Visto del lado del backend, sin pedido todavía:** dos refresh con la
+    misma cookie que llegan juntos (0 ms) dan **200 los dos**: `validar` y
+    `rotar` no bloquean la fila, así que un refresh token se convierte en dos
+    vigentes. Con el candado el front ya no lo provoca; solo importaría si
+    algún día se hace la detección de reuso (`DESPLIEGUE.md` §6).
 
 - **2026-09-25 (cuarto tramo)** — **Shell de escritorio probado** y un
   arreglo de layout.

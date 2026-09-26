@@ -23,11 +23,26 @@ export interface SesionIniciada {
  */
 const sinInterceptor = axios.create({ baseURL: BASE_URL, withCredentials: true, timeout: TIMEOUT_MS });
 
+/**
+ * Login, refresh y logout escriben la cookie de un portal, y esa cookie es una
+ * sola para todas las pestañas del navegador. La cola del interceptor ordena los
+ * refresh de UNA pestaña; entre pestañas los ordena este candado (Web Locks).
+ *
+ * Sin él, dos pestañas que refrescan a la vez (al restaurar el navegador, o
+ * cuando les vence el token juntas) mandan la misma cookie: `/refresh` la rota,
+ * y la segunda recibe 401 y queda en el login. Con el candado, la segunda espera
+ * y sale con la cookie ya rotada. También evita que un refresh que termina
+ * después de un logout vuelva a dejar una cookie viva en la PC del mostrador.
+ *
+ * Sin Web Locks (navegadores anteriores a 2022) se sigue igual, sin candado.
+ */
+const conCandado = <T>(portal: TipoPortal, tarea: () => Promise<T>): Promise<T> =>
+  'locks' in navigator ? navigator.locks.request(`gym.cookie.${portal}`, tarea) : tarea();
+
 export async function loginStaff(credenciales: CredencialesStaff): Promise<SesionIniciada> {
   try {
-    const { data } = await sinInterceptor.post<LoginStaffResponse>(
-      PORTALES.staff.login,
-      credenciales,
+    const { data } = await conCandado('staff', () =>
+      sinInterceptor.post<LoginStaffResponse>(PORTALES.staff.login, credenciales),
     );
     return {
       accessToken: data.accessToken,
@@ -45,9 +60,8 @@ export async function loginStaff(credenciales: CredencialesStaff): Promise<Sesio
 
 export async function loginSocio(credenciales: CredencialesSocio): Promise<SesionIniciada> {
   try {
-    const { data } = await sinInterceptor.post<LoginSocioResponse>(
-      PORTALES.socio.login,
-      credenciales,
+    const { data } = await conCandado('socio', () =>
+      sinInterceptor.post<LoginSocioResponse>(PORTALES.socio.login, credenciales),
     );
     return {
       accessToken: data.accessToken,
@@ -68,10 +82,11 @@ export async function loginSocio(credenciales: CredencialesSocio): Promise<Sesio
  * Authorization: el access token viejo puede estar vencido, es indistinto.
  *
  * Ojo: `/refresh` ROTA el refresh token, así que dos refresh en paralelo con la
- * misma cookie hacen fallar al segundo. Por eso el interceptor tiene cola.
+ * misma cookie hacen fallar al segundo. Por eso el interceptor tiene cola, y
+ * entre pestañas, el candado.
  */
 export async function refrescarSesion(portal: TipoPortal): Promise<SesionIniciada> {
-  const { data } = await sinInterceptor.post(PORTALES[portal].refresh, {});
+  const { data } = await conCandado(portal, () => sinInterceptor.post(PORTALES[portal].refresh, {}));
 
   if (portal === 'staff') {
     const respuesta = data as LoginStaffResponse;
@@ -114,7 +129,7 @@ export async function refrescarSesion(portal: TipoPortal): Promise<SesionIniciad
  */
 export async function logout(portal: TipoPortal): Promise<void> {
   try {
-    await sinInterceptor.post(PORTALES[portal].logout, {});
+    await conCandado(portal, () => sinInterceptor.post(PORTALES[portal].logout, {}));
   } catch (error) {
     throw normalizarError(error);
   }

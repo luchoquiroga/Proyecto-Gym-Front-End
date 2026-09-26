@@ -16,7 +16,13 @@ const SOCIO: Principal = { tipo: 'socio', id: 1, nombre: 'Ana', apellido: 'Pére
 const hayDatosEnCache = () => queryClient.getQueryData(['pagos']) !== undefined;
 
 beforeEach(() => {
-  useSesion.setState({ principal: ADMIN, accessToken: 'a', portal: 'staff', cargandoSesion: false });
+  useSesion.setState({
+    principal: ADMIN,
+    accessToken: 'a',
+    portal: 'staff',
+    cargandoSesion: false,
+    cerradaPorElServidor: false,
+  });
   queryClient.setQueryData(['pagos'], [{ id: 1 }]);
 });
 
@@ -39,5 +45,23 @@ describe('sesión y cache', () => {
   it('el silent refresh de la misma persona conserva el cache', () => {
     useSesion.getState().iniciarSesion('staff', ADMIN, 'renovado');
     expect(hayDatosEnCache()).toBe(true);
+  });
+});
+
+describe('quién cerró la sesión', () => {
+  it('el cierre del usuario no deja aviso', () => {
+    useSesion.getState().cerrarSesion();
+    expect(useSesion.getState().cerradaPorElServidor).toBe(false);
+  });
+
+  it('el cierre del servidor deja el aviso para el login', () => {
+    useSesion.getState().cerrarSesion('servidor');
+    expect(useSesion.getState().cerradaPorElServidor).toBe(true);
+  });
+
+  it('volver a entrar borra el aviso', () => {
+    useSesion.getState().cerrarSesion('servidor');
+    useSesion.getState().iniciarSesion('staff', ADMIN, 'b');
+    expect(useSesion.getState().cerradaPorElServidor).toBe(false);
   });
 });
