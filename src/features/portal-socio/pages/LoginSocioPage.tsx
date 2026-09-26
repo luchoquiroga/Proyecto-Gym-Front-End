@@ -7,6 +7,7 @@ import { PantallaAuth, claseLinkAuth } from '../../../components/layout/Pantalla
 import { CampoTexto } from '../../../components/ui/CampoTexto';
 import { aplicarErroresDelServidor } from '../../../lib/erroresFormulario';
 import { useSesion } from '../../../auth/sesion';
+import { AvisoSesionCerrada } from '../../../auth/AvisoSesionCerrada';
 import { RUTAS_LOGIN, rutaInicial } from '../../../auth/rutas';
 import { useLoginSocio } from '../hooks';
 import { logout } from '../../../auth/api';
@@ -84,6 +85,8 @@ export const LoginSocioPage = () => {
         </>
       }
     >
+      <AvisoSesionCerrada portal="socio" />
+
       {estado.emailRegistrado && !mensajeServidor && (
         <div className="mb-6 p-4 rounded-xl bg-emerald-950/30 border border-emerald-700/50 flex items-start gap-3 animate-fade-in">
           <CircleCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />

@@ -59,7 +59,7 @@ api.interceptors.response.use(
     }
 
     if (original._reintentada) {
-      useSesion.getState().cerrarSesion();
+      useSesion.getState().cerrarSesion('servidor');
       return Promise.reject(normalizarError(error));
     }
 
@@ -91,7 +91,7 @@ api.interceptors.response.use(
       // llegó (red, arranque en frío de Render, un 5xx del proxy), la cookie
       // puede seguir siendo válida: las peticiones fallan con su mensaje y el
       // próximo intento vuelve a refrescar.
-      if (sesionRechazada(normalizado)) useSesion.getState().cerrarSesion();
+      if (sesionRechazada(normalizado)) useSesion.getState().cerrarSesion('servidor');
       return Promise.reject(normalizado);
     } finally {
       refrescando = false;
