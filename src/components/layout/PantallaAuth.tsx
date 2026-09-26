@@ -1,4 +1,6 @@
-import { Dumbbell, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
+import { NOMBRE_GIMNASIO } from '../../lib/marca';
+import { LogoGimnasio } from '../ui/LogoGimnasio';
 import { ES_PRODUCCION } from '../../api/config';
 
 interface PantallaAuthProps {
@@ -22,17 +24,15 @@ export const PantallaAuth = ({ subtitulo, children, pie }: PantallaAuthProps) =>
     <div className="w-full max-w-md relative z-10 animate-slide-up">
       <div className="bg-gym-card/85 backdrop-blur-xl border border-gym-border rounded-3xl p-8 shadow-card-dark">
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="relative mb-4 group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-gym-red-600 to-gym-red-900 rounded-2xl blur-sm opacity-70 group-hover:opacity-100 transition duration-300" />
-            <div className="relative w-16 h-16 rounded-2xl bg-gym-dark border border-gym-border-light flex items-center justify-center shadow-red-glow">
-              <Dumbbell className="w-9 h-9 text-gym-red-500 -rotate-45" />
-            </div>
-          </div>
+          <LogoGimnasio className="w-44 mb-5 drop-shadow-[0_0_18px_rgba(230,0,18,0.35)]" />
 
           <h1 className="text-2xl md:text-3xl font-black tracking-wider text-gym-white uppercase">
-            IRON<span className="text-gym-red-500">GYM</span>
+            {NOMBRE_GIMNASIO}
           </h1>
-          <p className="text-xs text-gym-muted mt-1 uppercase tracking-widest">{subtitulo}</p>
+          <p className="text-[11px] font-semibold text-gym-muted mt-1 uppercase tracking-[0.35em]">
+            • Gimnasio •
+          </p>
+          <p className="text-xs text-gym-subtle mt-4 uppercase tracking-widest">{subtitulo}</p>
         </div>
 
         {children}

@@ -1,4 +1,4 @@
-import { CalendarClock, Dumbbell, IdCard, Loader2, LogOut, Tags } from 'lucide-react';
+import { CalendarClock, IdCard, Loader2, LogOut, Tags } from 'lucide-react';
 import { Cargando, ErrorDeCarga } from '../../../components/estado/Estados';
 import { formatearFecha } from '../../../lib/formato';
 import { useSesion } from '../../../auth/sesion';
@@ -6,6 +6,7 @@ import { useCerrarSesion } from '../../../auth/useCerrarSesion';
 import { useSocio } from '../../socios/hooks';
 import { EstadoSocioBadge } from '../../socios/components/EstadoSocioBadge';
 import { DiasRestantes } from '../components/DiasRestantes';
+import { LogoGimnasio } from '../../../components/ui/LogoGimnasio';
 
 /**
  * Portal del socio: su propia ficha, leída de `GET /clientes/{id}`.
@@ -26,8 +27,8 @@ export const PortalSocioPage = () => {
       <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-gym-card border border-gym-border rounded-2xl shadow-card-dark">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gym-dark border border-gym-border flex items-center justify-center text-gym-red-500 shadow-red-glow">
-              <Dumbbell className="w-7 h-7" />
+            <div className="w-14 h-14 shrink-0 rounded-2xl bg-gym-dark border border-gym-border flex items-center justify-center shadow-red-glow">
+              <LogoGimnasio className="w-11" />
             </div>
             <div>
               <span className="text-xs font-bold uppercase tracking-widest text-gym-muted">

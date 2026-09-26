@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="152 91 496 173">
+  <!--
+    Símbolo de Athletics: la A roja atravesada por la barra.
+    PROVISORIO: lo redibujó Gemini a partir del logo y todavía no se comparó
+    con el original. Sin fondo: el hueco de la A es una máscara, no un
+    triángulo negro, así el símbolo va sobre cualquier color.
+  -->
+  <defs>
+    <mask id="hueco-de-la-a" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="500">
+      <rect x="0" y="0" width="800" height="500" fill="#fff" />
+      <polygon points="400,148 436,206 364,206" fill="#000" />
+    </mask>
+  </defs>
+  <g transform="translate(0, -10)">
+    <g fill="#E60012">
+      <g mask="url(#hueco-de-la-a)">
+        <polygon points="352,260 288,260 384,105 416,105" />
+        <polygon points="384,105 416,105 512,260 448,260" />
+      </g>
+      <polygon points="350,230 450,230 435,206 365,206" />
+    </g>
+    <g fill="#FFFFFF">
+      <rect x="156" y="180" width="36" height="74" rx="4" />
+      <rect x="210" y="166" width="36" height="102" rx="4" />
+      <rect x="246" y="202" width="168" height="30" />
+      <rect x="372" y="232" width="34" height="38" />
+      <rect x="460" y="202" width="94" height="30" />
+      <rect x="554" y="166" width="36" height="102" rx="4" />
+      <rect x="608" y="180" width="36" height="74" rx="4" />
+    </g>
+  </g>
+</svg>

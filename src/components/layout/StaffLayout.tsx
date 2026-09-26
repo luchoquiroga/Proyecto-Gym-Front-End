@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   CreditCard,
-  Dumbbell,
   KeyRound,
   LayoutDashboard,
   Loader2,
@@ -17,6 +16,8 @@ import {
 import { useSesion } from '../../auth/sesion';
 import { useCerrarSesion } from '../../auth/useCerrarSesion';
 import { ES_PRODUCCION } from '../../api/config';
+import { NOMBRE_GIMNASIO } from '../../lib/marca';
+import { LogoGimnasio } from '../ui/LogoGimnasio';
 import type { RolStaff } from '../../auth/types';
 import { CambiarContrasena } from '../../features/cuenta/components/CambiarContrasena';
 
@@ -65,12 +66,10 @@ export const StaffLayout = () => {
       >
         <div className="h-20 flex items-center justify-between px-6 border-b border-gym-border/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gym-card border border-gym-border flex items-center justify-center shadow-red-glow">
-              <Dumbbell className="w-6 h-6 text-gym-red-500" />
-            </div>
+            <LogoGimnasio className="w-16 shrink-0" />
             <div>
               <span className="font-black tracking-wider text-xl uppercase">
-                IRON<span className="text-gym-red-500">GYM</span>
+                {NOMBRE_GIMNASIO}
               </span>
               <span className="block text-[10px] text-gym-muted font-bold tracking-widest uppercase">
                 {rol === 'ADMIN' ? 'Administración' : 'Mostrador'}
@@ -169,9 +168,9 @@ export const StaffLayout = () => {
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-2">
-            <Dumbbell className="w-5 h-5 text-gym-red-500" />
+            <LogoGimnasio className="w-12" />
             <span className="font-extrabold text-sm uppercase tracking-wider">
-              IRON<span className="text-gym-red-500">GYM</span>
+              {NOMBRE_GIMNASIO}
             </span>
           </div>
           <div className="w-8" />

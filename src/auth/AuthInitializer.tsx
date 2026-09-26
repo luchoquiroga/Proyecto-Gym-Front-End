@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Dumbbell, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { useSesion } from './sesion';
 import { refrescarSesion } from './api';
 import { escucharCierreDeSesion } from './sincronizacion';
 import { mensajeDeError, sesionRechazada } from '../lib/errores';
+import { LogoGimnasio } from '../components/ui/LogoGimnasio';
 
 /** A partir de acá se avisa que el servidor puede estar arrancando. */
 const ESPERA_LARGA_MS = 8_000;
@@ -95,10 +96,8 @@ export const AuthInitializer = ({ children }: { children: React.ReactNode }) => 
     return (
       <div className="min-h-screen bg-gym-black flex flex-col items-center justify-center p-6 select-none">
         <div className="relative flex items-center justify-center">
-          <div className="absolute w-24 h-24 rounded-full bg-gym-red-600/20 blur-xl animate-pulse" />
-          <div className="relative w-16 h-16 rounded-2xl bg-gym-dark border border-gym-border flex items-center justify-center shadow-red-glow">
-            <Dumbbell className="w-8 h-8 text-gym-red-500 animate-bounce" />
-          </div>
+          <div className="absolute w-40 h-20 rounded-full bg-gym-red-600/20 blur-xl animate-pulse" />
+          <LogoGimnasio className="relative w-36 animate-pulse" />
         </div>
         <p className="mt-6 text-sm font-semibold tracking-widest uppercase text-gym-muted animate-pulse">
           Verificando sesión segura...
