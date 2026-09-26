@@ -7,8 +7,14 @@ no coinciden, mandan ellos.
 
 Se actualiza **al terminar cada tramo**, no al final de todo.
 
-## Estado al 2026-09-25 (cierre del día)
+## Estado al 2026-09-26
 
+- **La web está publicada en https://gimnasioathletics.vercel.app** (Vercel
+  Hobby, producción desde `master`), contra el backend en Render y la base en
+  Neon: Vercel solo sirve la web y le reenvía `/api/*` a Render. La sesión
+  de **staff** ya se probó en la URL publicada (8.1, 26/09); falta la del
+  socio y el iPhone. Detalle y dos pendientes del backend en el historial del
+  26/09.
 - **La web está completa para el alcance definido y lista para ser el MVP.**
   El 25/09 se encontró que faltaba el ABM de planes de ADMIN (nunca había
   tenido ticket): se hizo como **W14**, probado en pantalla con ADMIN y con
@@ -21,10 +27,10 @@ Se actualiza **al terminar cada tramo**, no al final de todo.
   backend ya no depende de eso (B9). Los casos 7, 9 y 10 que habían quedado
   para después también se hicieron (quinto tramo). `pnpm test` corre **46
   tests**.
-- **El backend está commiteado y pusheado** en su `RamaLuciano`: `1b53fa2`
-  (B6, B7 y B8.1), `cea463b` (logout con token vencido + casos borde),
-  `4f36ce8` (Swagger apagado en producción, BCrypt aunque la cuenta no exista)
-  y `6a178d8`. **Swagger solo existe en local**: `http://localhost:8080/swagger-ui/index.html`.
+- **El backend está todo en `master` y desplegado en Render** (PRs #18, #19 y
+  #20, al 26/09): B6, B7, B8.1, B9, el pool de conexiones que deja dormir a
+  Neon y los arreglos de concurrencia de la anulación y la baja de ADMIN.
+  **Swagger solo existe en local**: `http://localhost:8080/swagger-ui/index.html`.
 - **Las tres áreas funcionan**: mostrador (GERENCIA: socios y cobrar),
   administración (ADMIN: además dashboard, pagos, planes y cuentas de staff) y
   el portal del socio (login, registro con código, días restantes).
@@ -52,37 +58,46 @@ y son los que más deuda sacan.
 | 5 | Cobrar, y portal del socio con los días restantes | **hecho** (22/09) — W5 y W10 |
 | 6 | Dashboard de ADMIN | **hecho** (23/09) — gráfico en SVG propio, sin `recharts` |
 | 7 | Tests del interceptor y de los guards | **hecho** (23/09) — `pnpm test`, 31 tests |
-| 8 | Shell de escritorio (repo aparte) | **en curso** — 8.0 preparado del lado del front; 8.2 armado y probado (25/09); esperan al hosting 8.1 y 8.3 |
+| 8 | Shell de escritorio (repo aparte) | **en curso** — 8.0 hecho: web publicada en Vercel (26/09); 8.2 armado y probado (25/09); 8.1 probado con staff en Chrome (26/09), falta socio e iPhone; 8.3 ya tiene la URL de producción |
 
-## Abierto al 2026-09-25 (cierre del día)
+## Abierto al 2026-09-26
 
 **Para retomar, en este orden:**
 
 1. **Commit inicial de `Gym-Escritorio`** (lo decide el dueño) y crear su
    remoto. Lo que quedó armado: sin UI propia, `devUrl` = `localhost:5173`,
-   `frontendDist` = URL de producción **a completar** (8.3), sin permisos de
+   `frontendDist` = URL de producción (8.3: ya existe,
+   `https://gimnasioathletics.vercel.app`), sin permisos de
    Tauri para la página (`capabilities: []`, sin plugins ni comandos),
    instalador NSIS, identificador `ar.gimnasio.escritorio`. Las reglas están
    en el `AGENTS.md` de ese repo.
 2. **Sin probar en pantalla** (de la revisión del 25/09): la pantalla de
    arranque con el backend apagado y el cobro incierto.
+3. **8.1, lo que falta en la URL publicada** (lo prueba el dueño): login del
+   socio (todavía no hay socios en producción: hace falta dar uno de alta y
+   activar su cuenta con el código), y la sesión en un **iPhone** (login, F5,
+   cerrar y reabrir Safari): es el caso por el que existe el proxy. La parte de
+   staff ya se probó (historial del 26/09).
 
 **En manos de otros:**
 
-- **Producción: front y back salen juntos.** El front ya espera los topes y
-  los errores nuevos del backend (`cea463b`). Los puntos 2 y 3 de B8 (CORS con
-  el dominio de la web, `SameSite=Lax`) esperan al hosting. **El cold start
-  (punto 4) se decidió el 25/09**: cron externo a `/ping` más el pool de
-  conexiones configurado para que Neon pueda dormir (detalle en B8). Lo
-  plantea el dueño en el backend.
-- **Hosting de la web**: la idea del dueño es empezar con **Vercel gratis** y
-  pasar después a un hosting pago. Ojo: el plan Hobby de Vercel es para uso no
-  comercial, sirve para probar pero no para que el gimnasio cobre con él. El
-  lado del front del paso 8.0 ya está hecho (`vercel.json`, API relativa en
-  producción, proxy de Vite para `pnpm dev:prod`). Si se elige otro proveedor,
-  `vercel.json` se reemplaza por su equivalente de rewrite. Esperan al hosting
-  **8.1** (probar la sesión en la URL publicada) y **8.3** (el instalador, que
-  lleva adentro la URL de producción).
+- **Variables de Render que faltan cargar** (el 26/09 todavía no estaban):
+  `CORS_ALLOWED_ORIGINS=http://localhost:5173,https://gimnasioathletics.vercel.app`
+  y `REFRESH_COOKIE_SAMESITE=Lax`. El login desde la web anda igual sin el
+  CORS (ver historial del 26/09), pero sin él depende de una detección
+  automática de Spring. `RATE_LIMIT_TRUSTED_PROXIES` queda en `1`: pasarlo a
+  2 no se probó, pero lo esperable es que no cambie nada (backend,
+  `DESPLIEGUE.md` §7).
+- **Antes de subirlo "posta"** (decisión del dueño el 26/09: se ve cuando
+  toque, no para el MVP):
+  - el rate limit del login por la web agrupa por IP de Vercel y no por
+    cliente (ver historial del 26/09);
+  - el plan Hobby de Vercel es para uso no comercial: sirve para probar pero
+    no para que el gimnasio opere con él. Si se cambia de proveedor,
+    `vercel.json` se reemplaza por su equivalente de rewrite.
+- **Cold start**: decidido el 25/09, cron externo a `/ping` cada ~10 minutos,
+  directo a Render (no a la web). Lo arma el dueño; `/ping` no toca la base,
+  así que Neon igual se duerme.
 - **Push**: lo hace el dueño.
 
 **Siguen abiertos de antes:**
@@ -131,6 +146,82 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-26 (segundo tramo)** — **La marca: Athletics y su símbolo.**
+  - El nombre era "IRONGYM", escrito a mano en tres lugares, y la pestaña
+    decía "gym-frontend" con el rayo violeta de Vite. Ahora el nombre vive en
+    `lib/marca.ts` (`NOMBRE_GIMNASIO`); el `<title>` de `index.html` no puede
+    importarlo, así que si cambia se cambia en los dos.
+  - El logo lo pasó a SVG Gemini a partir del original. De ese SVG se usa
+    **solo el símbolo** (la A roja atravesada por la barra), en
+    `public/logo-athletics.svg`, sin fondo (el hueco de la A es una máscara) y
+    con `LogoGimnasio` en `components/ui`. Las letras del SVG eran texto que
+    depende de las fuentes de cada equipo, así que "ATHLETICS" y "• GIMNASIO •"
+    los escribe la web con Inter. Reemplaza a la mancuerna de `lucide` en el
+    login, el menú (escritorio y celular), la pantalla de carga y el portal
+    del socio. `favicon.svg` es el símbolo sobre un cuadrado oscuro.
+  - **Provisorio hasta compararlo con el original**: el bloque blanco que
+    cuelga debajo de la barra parece un error del redibujo, y a 16 px el
+    favicon casi no se lee (quizás convenga solo la A con un tramo de barra).
+    Corregirlo es tocar solo esos dos `.svg`. El dueño lo vio andando y le
+    pareció bien.
+  - Falta el ícono de pantalla de inicio del iPhone (`apple-touch-icon`, tiene
+    que ser PNG): conviene hacerlo con el logo definitivo.
+  - Se borraron los restos de la plantilla de Vite que nadie usaba
+    (`src/assets/hero.png`, `react.svg`, `vite.svg` y `public/icons.svg`).
+  - Verificado: `pnpm build`, `pnpm lint` y `pnpm test` (46).
+
+- **2026-09-26** — **La web, publicada en Vercel** (paso 8.0 cerrado), en
+  `https://gimnasioathletics.vercel.app`. Sin cambios de código en el front.
+  - Antes de crear el proyecto se simuló el build de Vercel: `git archive` de
+    `master` (sin `.env`) instalado y compilado con **pnpm 10**, que es lo que
+    usa Vercel para un lockfile 9.0 (acá se usa pnpm 11). Salió en verde sin
+    ninguna variable y el bundle no menciona `localhost`. Si algún día Vercel
+    falla en el install, la primera sospecha es esa diferencia de versión.
+  - Verificado contra la URL publicada: la raíz y una ruta interna
+    (`/staff/clientes`) devuelven la web, y `/api/v1/clientes` sin token lo
+    responde Spring con su 401: el rewrite a Render anda.
+  - **CORS: el login anda sin agregar el dominio**, y no por casualidad. En
+    Render, Spring Boot detecta la plataforma y procesa solo los
+    `X-Forwarded-Host/Proto` que manda Vercel, así que un pedido de la web por
+    el proxy le llega como del mismo origen y el filtro de CORS no se mete.
+    Medido: el mismo `Origin` de la web da 401 por Vercel y 403 "Invalid CORS
+    request" directo a Render. Como eso depende de una detección automática
+    que el backend no configura, igual se recomienda cargar el dominio en
+    `CORS_ALLOWED_ORIGINS`.
+  - **Rate limit del login detrás de Vercel: agrupa por IP de Vercel.**
+    Medido con logins fallidos contra un email inexistente:
+    - directo a Render con `X-Forwarded-For` falso → 429 al sexto: toma la IP
+      real, no se deja engañar;
+    - por Vercel con `X-Forwarded-For` falso → Vercel lo pisa, tampoco;
+    - por Vercel sin header → casi nunca llega al 429: la clave es la IP de
+      salida de Vercel, que rota entre unas pocas.
+    La IP del usuario no llega a la posición de `X-Forwarded-For` que lee el
+    filtro. Pasar `RATE_LIMIT_TRUSTED_PROXIES` a 2 (lo que decía B8) no se
+    probó, pero por cómo se comporta lo esperable es que no cambie nada; el
+    razonamiento está en `DESPLIEGUE.md` §7 del backend. Efecto: los usuarios
+    de la web comparten unos pocos cupos de 5 por minuto. El arreglo va en el backend (leer la IP de un header de
+    Vercel, a confirmar con un log cuál llega) y el dueño lo dejó para cuando
+    se suba en serio.
+  - **8.1 con staff, probado en Chrome** contra la URL publicada (por
+    JavaScript sobre el DOM: la ventana estaba oculta). Render se reinició
+    en el medio porque el dueño estaba tocando variables, y eso no rompió
+    ninguna prueba:
+    - con una cookie que ya había en ese Chrome, la web **recuperó la sesión
+      sola por el proxy** (`refresh 200`), y el F5 la volvió a mantener;
+    - las cinco pantallas de ADMIN responden 200, sin errores en pantalla ni
+      en la consola. La base de producción está casi vacía: sin socios ni
+      pagos ("Todavía no hay socios cargados"), solo el admin en Staff, y los
+      dos planes sembrados con el mensual ya en $35.000;
+    - "Cerrar sesión" llama a los dos `/logout` (200) y el F5 posterior queda
+      en el login (`refresh 401`), sin el aviso de cierre por el servidor: la
+      cookie se revoca de verdad en producción;
+    - tiempos: con la base dormida o Render arrancando, las primeras
+      peticiones tardaron 2 a 4,5 s; con todo despierto, 350 ms a 1 s
+      (`ganancias-por-mes` es la más lenta, ~1 s).
+    - No se pudo verificar desde el navegador si `CORS_ALLOWED_ORIGINS` y
+      `REFRESH_COOKIE_SAMESITE` ya están cargadas (ver el punto de CORS de
+      arriba; la cookie es HttpOnly): se confirma en el panel de Render.
 
 - **2026-09-25 (quinto tramo)** — **Los casos 7, 9 y 10 de la revisión**, que
   habían quedado para después del MVP. Sin dependencias nuevas.
