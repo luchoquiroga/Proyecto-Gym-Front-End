@@ -7,7 +7,7 @@ no coinciden, mandan ellos.
 
 Se actualiza **al terminar cada tramo**, no al final de todo.
 
-## Estado al 2026-09-26
+## Estado al 2026-09-28
 
 - **La web está publicada en https://gimnasioathletics.vercel.app** (Vercel
   Hobby, producción desde `master`), contra el backend en Render y la base en
@@ -37,9 +37,9 @@ Se actualiza **al terminar cada tramo**, no al final de todo.
 - **El stack se achicó respecto de lo planeado**: `@tanstack/react-table` y
   `recharts` se descartaron (`STACK.md` §2.2 y §2.4); lo que hacían lo cubren
   `lib/useOrden.ts` y un SVG propio.
-- **El escritorio (paso 8.2) está armado**: repo `Gym-Escritorio` (Tauri v2,
-  sin commitear), compila, abre la web de `localhost:5173` y **sostiene la
-  sesión** contra el backend local (probado el 25/09). **La mobile sigue congelada** (`ARQUITECTURA-APPS.md` §2.1,
+- **El escritorio está terminado (8.2 y 8.3)**: repo `Gym-Escritorio` (Tauri
+  v2, sin commitear) apunta a la URL de producción y genera el instalador
+  `Athletics_0.1.0_x64-setup.exe`, que el dueño instaló y probó el 28/09. **La mobile sigue congelada** (`ARQUITECTURA-APPS.md` §2.1,
   decisión 4): retomarla es reabrir esa decisión y resolver dónde vive la
   sesión fuera del navegador (§6 de ese documento).
 
@@ -58,18 +58,14 @@ y son los que más deuda sacan.
 | 5 | Cobrar, y portal del socio con los días restantes | **hecho** (22/09) — W5 y W10 |
 | 6 | Dashboard de ADMIN | **hecho** (23/09) — gráfico en SVG propio, sin `recharts` |
 | 7 | Tests del interceptor y de los guards | **hecho** (23/09) — `pnpm test`, 31 tests |
-| 8 | Shell de escritorio (repo aparte) | **en curso** — 8.0 hecho: web publicada en Vercel (26/09); 8.2 armado y probado (25/09); 8.1 probado con staff en Chrome (26/09), falta socio e iPhone; 8.3 ya tiene la URL de producción |
+| 8 | Shell de escritorio (repo aparte) | **en curso** — 8.0 hecho: web publicada en Vercel (26/09); 8.2 y 8.3 hechos: instalador apuntando a producción, instalado por el dueño (28/09); 8.1 probado con staff en Chrome (26/09), falta socio e iPhone |
 
-## Abierto al 2026-09-26
+## Abierto al 2026-09-28
 
 **Para retomar, en este orden:**
 
 1. **Commit inicial de `Gym-Escritorio`** (lo decide el dueño) y crear su
-   remoto. Lo que quedó armado: sin UI propia, `devUrl` = `localhost:5173`,
-   `frontendDist` = URL de producción (8.3: ya existe,
-   `https://gimnasioathletics.vercel.app`), sin permisos de
-   Tauri para la página (`capabilities: []`, sin plugins ni comandos),
-   instalador NSIS, identificador `ar.gimnasio.escritorio`. Las reglas están
+   remoto. Lo que falta del escritorio (firma de código y auto-update) está
    en el `AGENTS.md` de ese repo.
 2. **Sin probar en pantalla** (de la revisión del 25/09): la pantalla de
    arranque con el backend apagado y el cobro incierto.
@@ -146,6 +142,20 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-09-28** — **El escritorio apunta a producción y tiene instalador**
+  (8.3 cerrado).
+  - `frontendDist` = `https://gimnasioathletics.vercel.app`. La app pasa a
+    llamarse **Athletics** (nombre, ventana e instalador) y el ícono sale del
+    `favicon.svg` de la web; el `identifier` (`ar.gimnasio.escritorio`) no se
+    tocó.
+  - Instalador NSIS en español, por usuario (sin pedir administrador), de
+    1,8 MB. Se lleva a la PC en un pendrive: es un solo `.exe`.
+  - **Probado por el dueño**: lo instaló con el `.exe` y la app carga la web
+    publicada y sostiene la sesión.
+  - No está firmado (SmartScreen avisa "editor desconocido") y no tiene
+    auto-update: los cambios de la web llegan solos; solo se reinstala si
+    cambia el shell.
 
 - **2026-09-26 (segundo tramo)** — **La marca: Athletics y su símbolo.**
   - El nombre era "IRONGYM", escrito a mano en tres lugares, y la pestaña
