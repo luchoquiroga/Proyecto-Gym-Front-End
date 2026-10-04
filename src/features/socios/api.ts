@@ -1,26 +1,31 @@
 import api from '../../api/axios';
 import type { PaginaResponse, ParametrosPagina } from '../../types/api';
-import type { Socio, SocioAltaResponse, SocioRequest } from './types';
+import type { EstadoSocio, Socio, SocioAltaResponse, SocioRequest } from './types';
 
 /** Único lugar del front que conoce las rutas y los DTOs de socios. */
 
 /**
  * Por qué se puede ordenar el padrón, y a qué campos de la ENTIDAD `Cliente`.
  * Lista cerrada: un campo que no existe hace que el backend responda 400.
- * "Vence" y "Plan" no están porque se calculan de los pagos; "Estado" tampoco,
- * porque la base lo ordenaría alfabético (ACTIVO, INACTIVO, MOROSO), que no le
- * sirve a nadie.
+ * "Vence" y "Plan" no están porque se calculan de los pagos. "Estado" va por
+ * `ordenEstado` y no por `estado`: el estado se guarda como texto y quedaría
+ * alfabético (ACTIVO, INACTIVO, MOROSO); `ordenEstado` lo calcula el backend en
+ * el orden del mostrador (ACTIVO, MOROSO, INACTIVO).
  */
 export const ORDENABLES_SOCIOS = {
   documento: ['documento'],
   socio: ['apellido', 'nombre'],
+  estado: ['ordenEstado', 'apellido', 'nombre'],
 } as const;
 
 /**
  * `sort` en formato de Spring (`['apellido,asc', 'id,asc']`), con campos de la
  * ENTIDAD. `indexes: null` manda `sort=a&sort=b`: con `sort[]=` Spring lo ignora.
+ * Sin `estado` trae a todos; con él, solo los socios en ese estado.
  */
-export const listarSocios = (params: ParametrosPagina & { sort?: readonly string[] }) =>
+export const listarSocios = (
+  params: ParametrosPagina & { sort?: readonly string[]; estado?: EstadoSocio },
+) =>
   api
     .get<PaginaResponse<Socio>>('/api/v1/clientes', { params, paramsSerializer: { indexes: null } })
     .then((r) => r.data);

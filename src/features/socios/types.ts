@@ -7,6 +7,9 @@
  */
 export type EstadoSocio = 'ACTIVO' | 'MOROSO' | 'INACTIVO';
 
+/** En el orden en que los lee el mostrador. Sirve también para validar `?estado=` de la URL. */
+export const ESTADOS_SOCIO: readonly EstadoSocio[] = ['ACTIVO', 'MOROSO', 'INACTIVO'];
+
 export interface PlanVigente {
   id: number;
   nombre: string;

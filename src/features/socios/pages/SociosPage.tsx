@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Banknote, Pencil, Search, UserMinus, UserPlus, Users } from 'lucide-react';
 import { EncabezadoPagina } from '../../../components/ui/EncabezadoPagina';
 import { Paginador } from '../../../components/ui/Paginador';
@@ -11,16 +12,22 @@ import { EstadoSocioBadge } from '../components/EstadoSocioBadge';
 import { FormularioSocio } from '../components/FormularioSocio';
 import { AvisoCodigoActivacion } from '../components/AvisoCodigoActivacion';
 import { ConfirmarBaja } from '../components/ConfirmarBaja';
+import { FiltroEstado } from '../components/FiltroEstado';
 import { ORDENABLES_SOCIOS } from '../api';
 import { useBuscarSocios, useSocios } from '../hooks';
-import type { Socio, SocioAltaResponse } from '../types';
+import { ESTADOS_SOCIO, type EstadoSocio, type Socio, type SocioAltaResponse } from '../types';
 import { FormularioCobro } from '../../pagos/components/FormularioCobro';
 import { ComprobanteCobro } from '../../pagos/components/ComprobanteCobro';
 import type { PagoResponse } from '../../pagos/types';
 
+/** `?estado=` viene de la URL (las tarjetas del dashboard la arman): se acepta solo un estado real. */
+const leerEstado = (valor: string | null): EstadoSocio | null =>
+  ESTADOS_SOCIO.find((estado) => estado === valor) ?? null;
 
 export const SociosPage = () => {
   const [pagina, setPagina] = useState(0);
+  const [parametros, setParametros] = useSearchParams();
+  const estado = leerEstado(parametros.get('estado'));
   const [termino, setTermino] = useState('');
   const busqueda = useDebounce(termino);
   const buscando = busqueda.trim().length > 0;
@@ -41,7 +48,12 @@ export const SociosPage = () => {
     setPagina(0);
   };
 
-  const listado = useSocios(pagina, undefined, orden.sort);
+  const filtrarPor = (nuevo: EstadoSocio | null) => {
+    setParametros(nuevo ? { estado: nuevo } : {});
+    setPagina(0);
+  };
+
+  const listado = useSocios(pagina, undefined, orden.sort, estado ?? undefined);
   const resultados = useBuscarSocios(busqueda);
 
   const consulta = buscando ? resultados : listado;
@@ -73,20 +85,25 @@ export const SociosPage = () => {
         </button>
       </EncabezadoPagina>
 
-      <div className="relative max-w-md">
-        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gym-subtle">
-          <Search className="w-5 h-5" />
+      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+        <div className="relative w-full max-w-md">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gym-subtle">
+            <Search className="w-5 h-5" />
+          </div>
+          <input
+            type="search"
+            value={termino}
+            onChange={(e) => {
+              setTermino(e.target.value);
+              setPagina(0);
+            }}
+            placeholder="Buscar por nombre..."
+            className="w-full pl-11 pr-4 py-3 bg-gym-card border border-gym-border rounded-xl text-white placeholder-gym-subtle text-sm focus:outline-none focus:border-gym-red-500 focus:ring-1 focus:ring-gym-red-500 transition-colors"
+          />
         </div>
-        <input
-          type="search"
-          value={termino}
-          onChange={(e) => {
-            setTermino(e.target.value);
-            setPagina(0);
-          }}
-          placeholder="Buscar por nombre..."
-          className="w-full pl-11 pr-4 py-3 bg-gym-card border border-gym-border rounded-xl text-white placeholder-gym-subtle text-sm focus:outline-none focus:border-gym-red-500 focus:ring-1 focus:ring-gym-red-500 transition-colors"
-        />
+
+        {/* La búsqueda tampoco se filtra: `/clientes/buscar` no acepta `estado`. */}
+        <FiltroEstado estado={estado} onCambiar={filtrarPor} deshabilitado={buscando} />
       </div>
 
       <div className="bg-gym-card border border-gym-border rounded-2xl overflow-hidden shadow-card-dark">
@@ -97,7 +114,11 @@ export const SociosPage = () => {
         ) : !socios || socios.length === 0 ? (
           <SinDatos
             titulo={
-              buscando ? 'Ningún socio coincide con la búsqueda' : 'Todavía no hay socios cargados'
+              buscando
+                ? 'Ningún socio coincide con la búsqueda'
+                : estado
+                  ? `No hay socios en estado ${estado.toLowerCase()}`
+                  : 'Todavía no hay socios cargados'
             }
             detalle={buscando ? `Se buscó "${busqueda}" por nombre.` : undefined}
           />
@@ -120,7 +141,14 @@ export const SociosPage = () => {
                       onOrdenar={() => ordenarPor('socio')}
                       deshabilitado={buscando}
                     />
-                    {['Teléfono', 'Estado', 'Vence', 'Plan vigente', 'Acciones'].map((etiqueta) => (
+                    <Encabezado etiqueta="Teléfono" />
+                    <EncabezadoOrdenable
+                      etiqueta="Estado"
+                      direccion={orden.direccionDe('estado')}
+                      onOrdenar={() => ordenarPor('estado')}
+                      deshabilitado={buscando}
+                    />
+                    {['Vence', 'Plan vigente', 'Acciones'].map((etiqueta) => (
                       <Encabezado key={etiqueta} etiqueta={etiqueta} />
                     ))}
                   </tr>

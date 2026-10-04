@@ -143,6 +143,39 @@ y son los que más deuda sacan.
 
 ## Historial
 
+- **2026-10-04 (segundo tramo)** — **Socios por estado, y el dashboard que lleva ahí.**
+  - **Backend** (`IdeaProjectspi`, sin commit): `GET /clientes` acepta
+    `?estado=` (opcional; un estado inexistente → 400) y se puede ordenar por
+    `ordenEstado`, un `@Formula` de solo lectura en `Cliente` que da ACTIVO,
+    MOROSO, INACTIVO (por `estado` queda alfabético). El esquema no cambia.
+    `@AllArgsConstructor` se reemplazó por un constructor con los 9 campos que
+    se guardan, para no sumarle a mano un campo que calcula la base. 3 tests de
+    integración nuevos; la suite completa (220) en verde. `CONTRATO-API.md` y
+    `AUTHZ-MATRIX.md` actualizados.
+  - **Socios**: chips Todos / Activos / Morosos / Inactivos que viven en la URL
+    (`?estado=`, validado contra `ESTADOS_SOCIO`), y la columna Estado se puede
+    ordenar. Durante una búsqueda los chips y el orden se deshabilitan:
+    `/clientes/buscar` no acepta ni `estado` ni `sort`.
+  - **Dashboard**: "Socios registrados" y "Socios activos" pasaron a ser
+    "Socios activos" y "Socios morosos", las dos de `GET /dashboard/socios`, y
+    abren `/staff/socios?estado=...`. Una `TarjetaKpi` con enlace ahora es
+    clickeable entera (también la de ingresos); mientras carga o si falló, no.
+  - Verificado: build, lint y 46 tests; el filtro, el orden y el 400 probados
+    con curl contra el backend local. **Falta mirarlo en el navegador** (la
+    extensión de Chrome no respondió en esta sesión).
+  - **Abierto**: el cambio del backend hay que desplegarlo en Render antes que
+    la web; si no, en producción los chips no filtran (el backend ignora
+    `estado`) y ordenar por Estado responde 400.
+
+- **2026-10-04** — **Fuera de la vista del dueño lo que es guía nuestra.**
+  - El cartel "API: Producción/Local" (pie del login y sidebar del staff) solo
+    se muestra fuera de producción, así que en local seguimos viendo "Local".
+  - Se sacó "El token de sesión vive solo en memoria" del pie del login.
+  - `ErrorDeCarga` ya no muestra la línea `HTTP {status}` en producción.
+  - El error sin conexión dice "Revisá la conexión a internet y reintentá" en
+    vez de "Verificá que el API esté levantada".
+  - Verificado: `pnpm build`, `pnpm lint` y los 46 tests en verde.
+
 - **2026-09-28** — **El escritorio apunta a producción y tiene instalador**
   (8.3 cerrado).
   - `frontendDist` = `https://gimnasioathletics.vercel.app`. La app pasa a

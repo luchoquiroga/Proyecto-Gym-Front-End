@@ -153,7 +153,7 @@ autenticado.
 
 | Método | Ruta | Rol | Notas |
 |---|---|---|---|
-| GET | `/clientes` | ADMIN, GERENCIA | paginado (`?page=&size=&sort=`, default 20). Devuelve `PaginaResponse<ClienteResponse>` |
+| GET | `/clientes` | ADMIN, GERENCIA | paginado (`?page=&size=&sort=`, default 20). Devuelve `PaginaResponse<ClienteResponse>`. **`?estado=ACTIVO\|MOROSO\|INACTIVO`** (opcional, desde el 04/10) filtra; un estado que no existe → 400 "El parámetro 'estado' tiene un valor inválido" |
 | GET | `/clientes/buscar?nombre=` | ADMIN, GERENCIA | **lista plana, sin paginar** |
 | GET | `/clientes/{id}` | ADMIN, GERENCIA, o el propio socio | el socio solo puede pedir su id; otro id → 403 |
 | POST | `/clientes` | ADMIN, GERENCIA | 201. **Devuelve `ClienteAltaResponse`, con `codigoActivacion`** |
@@ -397,8 +397,10 @@ corrida diaria mantiene al día. GERENCIA recibe 403, como en todo el dashboard.
 servicios se lo pasan tal cual al repositorio (verificado el 23/09). Dos cosas:
 
 - Se ordena por **campos de la entidad**, no del DTO. En socios sirven
-  `nombre`, `apellido`, `documento` y `estado`, pero **no `fechaVencimiento` ni
-  `planVigente`**: se calculan a partir de los pagos y no son columnas de
+  `nombre`, `apellido`, `documento`, `estado` y **`ordenEstado`**, pero **no
+  `fechaVencimiento` ni `planVigente`**. `estado` ordena alfabético (ACTIVO,
+  INACTIVO, MOROSO); `ordenEstado` (desde el 04/10, un `@Formula` en `Cliente`)
+  ordena como el mostrador: ACTIVO, MOROSO, INACTIVO: se calculan a partir de los pagos y no son columnas de
   `clientes`. En pagos, `fechaPago`, `fechaVencimiento` y `montoAbonado`.
 - Sin `sort`, el orden es el de la base (en la práctica, por id), que no está
   garantizado.
