@@ -8,7 +8,7 @@ import {
   listarSocios,
   obtenerSocio,
 } from './api';
-import type { SocioRequest } from './types';
+import type { EstadoSocio, SocioRequest } from './types';
 
 /**
  * Claves de cache: recurso → parámetros. Invalidar `['socios']` alcanza para
@@ -16,10 +16,15 @@ import type { SocioRequest } from './types';
  * cobrar o de dar de baja.
  */
 
-export const useSocios = (pagina: number, tamanio = TAMANIO_PAGINA, sort?: readonly string[]) =>
+export const useSocios = (
+  pagina: number,
+  tamanio = TAMANIO_PAGINA,
+  sort?: readonly string[],
+  estado?: EstadoSocio,
+) =>
   useQuery({
-    queryKey: ['socios', { page: pagina, size: tamanio, sort }],
-    queryFn: () => listarSocios({ page: pagina, size: tamanio, sort }),
+    queryKey: ['socios', { page: pagina, size: tamanio, sort, estado }],
+    queryFn: () => listarSocios({ page: pagina, size: tamanio, sort, estado }),
   });
 
 export const useBuscarSocios = (nombre: string) => {

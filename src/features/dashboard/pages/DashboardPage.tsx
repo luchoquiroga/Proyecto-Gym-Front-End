@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, CreditCard, DollarSign, LayoutDashboard, UserCheck, Users } from 'lucide-react';
+import { ArrowUpRight, Clock, CreditCard, DollarSign, LayoutDashboard, UserCheck } from 'lucide-react';
 import { EncabezadoPagina } from '../../../components/ui/EncabezadoPagina';
 import { Cargando, ErrorDeCarga, SinDatos } from '../../../components/estado/Estados';
 import { formatearFecha, formatearPesos, nombreDeMes } from '../../../lib/formato';
@@ -14,9 +14,8 @@ export const DashboardPage = () => {
   const principal = useSesion((s) => s.principal);
   const ganancias = useGananciasMensuales();
 
-  // Una sola consulta da las dos cosas: el total de socios (totalElementos) y
-  // las primeras filas. Contar en el navegador trayendo la lista entera dejó de
-  // ser posible cuando el listado pasó a estar paginado.
+  // Las primeras filas del padrón, para la tabla de abajo. Los conteos por
+  // estado no salen de acá: los da GET /dashboard/socios.
   const socios = useSocios(0, 5);
   const porEstado = useSociosPorEstado();
 
@@ -59,27 +58,26 @@ export const DashboardPage = () => {
           valor={ganancias.data?.cantidadPagos ?? null}
           detalle="Pagos registrados en el período"
         />
-        <TarjetaKpi
-          titulo="Socios registrados"
-          icono={Users}
-          cargando={socios.isLoading}
-          error={socios.isError ? socios.error : undefined}
-          valor={socios.data?.totalElementos ?? null}
-          detalle="Total del padrón, activos e inactivos"
-        />
-        {/* Sale de GET /dashboard/socios: contar los activos de una página en el
-            navegador daría un número equivocado (ticket W9). */}
+        {/* Las dos salen de GET /dashboard/socios: contar en el navegador sobre
+            una página daría un número equivocado (ticket W9). Cada una abre
+            Socios filtrado por su estado. */}
         <TarjetaKpi
           titulo="Socios activos"
           icono={UserCheck}
           cargando={porEstado.isLoading}
           error={porEstado.isError ? porEstado.error : undefined}
           valor={porEstado.data?.activos ?? null}
-          detalle={
-            porEstado.data
-              ? `${porEstado.data.morosos} morosos · ${porEstado.data.inactivos} inactivos`
-              : undefined
-          }
+          detalle="Con la cuota al día"
+          enlace={{ a: '/staff/socios?estado=ACTIVO', texto: 'Ver los activos' }}
+        />
+        <TarjetaKpi
+          titulo="Socios morosos"
+          icono={Clock}
+          cargando={porEstado.isLoading}
+          error={porEstado.isError ? porEstado.error : undefined}
+          valor={porEstado.data?.morosos ?? null}
+          detalle="Con la cuota vencida"
+          enlace={{ a: '/staff/socios?estado=MOROSO', texto: 'Ver los morosos' }}
         />
       </div>
 

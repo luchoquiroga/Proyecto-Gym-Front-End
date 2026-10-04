@@ -1,4 +1,3 @@
-import { ShieldCheck } from 'lucide-react';
 import { NOMBRE_GIMNASIO } from '../../lib/marca';
 import { LogoGimnasio } from '../ui/LogoGimnasio';
 import { ES_PRODUCCION } from '../../api/config';
@@ -39,16 +38,12 @@ export const PantallaAuth = ({ subtitulo, children, pie }: PantallaAuthProps) =>
 
         <div className="mt-8 pt-6 border-t border-gym-border/50 flex flex-col items-center gap-2 text-xs text-gym-subtle">
           {pie}
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-gym-red-500" />
-            <span>El token de sesión vive solo en memoria</span>
-          </div>
-          <span className="text-[10px] font-mono text-gym-muted">
-            API:{' '}
-            <strong className={ES_PRODUCCION ? 'text-gym-red-400' : 'text-emerald-400'}>
-              {ES_PRODUCCION ? 'Producción' : 'Local'}
-            </strong>
-          </span>
+          {/* Guía para nosotros, no para el dueño: en producción no se muestra. */}
+          {!ES_PRODUCCION && (
+            <span className="text-[10px] font-mono text-gym-muted">
+              API: <strong className="text-emerald-400">Local</strong>
+            </span>
+          )}
         </div>
       </div>
     </div>
