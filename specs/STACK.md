@@ -286,7 +286,8 @@ porque desde W6 la web escribe de verdad.
 copiando `.env.example`, que sí se sube y documenta cada variable. Ninguno tiene
 secretos, pero son configuración de cada entorno. Un build de producción anda
 **sin ninguna variable** (el caso de Vercel): `src/api/config.ts` usa el API
-relativo y el cartel "Producción" por defecto cuando el modo es producción.
+relativo y toma el entorno como producción por defecto cuando el modo es
+producción (y en producción el cartel del entorno no se muestra).
 
 Del lado del backend (`C:\Users\lucia\IdeaProjects\api`):
 

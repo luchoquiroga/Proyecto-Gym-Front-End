@@ -125,14 +125,13 @@ export const StaffLayout = () => {
             </div>
           </div>
 
-          <div className="px-2.5 py-1.5 rounded-lg bg-gym-black/70 border border-gym-border/60 text-[10px] flex items-center justify-between">
-            <span className="text-gym-muted font-bold uppercase tracking-wider">API</span>
-            <span
-              className={`font-mono font-black ${ES_PRODUCCION ? 'text-gym-red-400' : 'text-emerald-400'}`}
-            >
-              {ES_PRODUCCION ? 'Producción' : 'Local'}
-            </span>
-          </div>
+          {/* Guía para nosotros, no para el dueño: en producción no se muestra. */}
+          {!ES_PRODUCCION && (
+            <div className="px-2.5 py-1.5 rounded-lg bg-gym-black/70 border border-gym-border/60 text-[10px] flex items-center justify-between">
+              <span className="text-gym-muted font-bold uppercase tracking-wider">API</span>
+              <span className="font-mono font-black text-emerald-400">Local</span>
+            </div>
+          )}
 
           <button
             onClick={() => setCambiandoContrasena(true)}

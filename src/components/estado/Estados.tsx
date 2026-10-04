@@ -1,5 +1,6 @@
 import { AlertTriangle, Inbox, Loader2, RefreshCw, ShieldX } from 'lucide-react';
 import { normalizarError } from '../../lib/errores';
+import { ES_PRODUCCION } from '../../api/config';
 
 /**
  * Los cuatro estados de una pantalla son cargando, vacío, error y con datos.
@@ -58,7 +59,7 @@ export const ErrorDeCarga = ({ error, onReintentar }: ErrorDeCargaProps) => {
           {esProhibido ? 'Sin permiso para esta operación' : 'No se pudieron traer los datos'}
         </p>
         <p className="text-sm text-gym-muted leading-snug">{mensaje}</p>
-        {status !== null && (
+        {status !== null && !ES_PRODUCCION && (
           <p className="text-[11px] font-mono text-gym-subtle">HTTP {status}</p>
         )}
       </div>

@@ -25,7 +25,7 @@ export class ErrorApi extends Error {
 }
 
 const SIN_CONEXION =
-  'No se pudo conectar con el servidor. Verificá que el API esté levantada.';
+  'No se pudo conectar con el servidor. Revisá la conexión a internet y reintentá.';
 
 /**
  * En el plan gratis de Render el backend se duerme sin tráfico y la primera
