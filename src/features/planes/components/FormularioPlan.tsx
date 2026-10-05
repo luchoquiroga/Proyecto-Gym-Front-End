@@ -59,7 +59,6 @@ export const FormularioPlan = ({ plan, onCerrar }: FormularioPlanProps) => {
       onCerrar={onCerrar}
       bloqueado={guardando}
       titulo={plan ? 'Editar plan' : 'Nuevo plan'}
-      descripcion="El precio es el mínimo del cobro y la duración define hasta cuándo queda al día el socio."
     >
       <form onSubmit={guardar} className="space-y-5" noValidate>
         {mensajeServidor && (

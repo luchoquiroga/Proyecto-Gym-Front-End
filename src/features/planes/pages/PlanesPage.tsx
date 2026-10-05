@@ -70,9 +70,6 @@ export const PlanesPage = () => {
                 <span className="text-3xl font-black text-white tracking-tight">
                   {formatearPesos(plan.precio)}
                 </span>
-                <p className="text-xs text-gym-muted mt-1">
-                  Es el monto mínimo del cobro: el backend rechaza un pago menor.
-                </p>
               </div>
 
               {esAdmin && (
