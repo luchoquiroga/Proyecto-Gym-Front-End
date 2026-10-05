@@ -143,6 +143,12 @@ y son los que más deuda sacan.
 
 ## Historial
 
+- **2026-10-05** — **Planes sin leyendas de más.** Se sacó "Es el monto mínimo
+  del cobro: el backend rechaza un pago menor" de la tarjeta de cada plan, y la
+  descripción del modal de alta/edición ("El precio es el mínimo del
+  cobro..."). La regla sigue igual; se avisa donde importa, en el formulario de
+  cobro. Verificado: `pnpm build` y `pnpm lint` en verde.
+
 - **2026-10-04 (segundo tramo)** — **Socios por estado, y el dashboard que lleva ahí.**
   - **Backend** (`IdeaProjectspi`, sin commit): `GET /clientes` acepta
     `?estado=` (opcional; un estado inexistente → 400) y se puede ordenar por
