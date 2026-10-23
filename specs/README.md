@@ -62,7 +62,7 @@ hábito.
 - **`specs/AUTHZ-MATRIX.md`** — la verdad sobre quién puede llamar a qué.
 - **`specs/ARQUITECTURA-APPS.md`** — el alcance de producto de cada app (§2.1) y
   por qué el escritorio es un shell de la web.
-- **`specs/DESPLIEGUE.md`** — variables de entorno, Render y Neon.
+- **`specs/DESPLIEGUE.md`** — variables de entorno, Render y Supabase.
 - El **Swagger** del backend corriendo: `http://localhost:8080/swagger-ui/index.html`.
 
 Si algo del contrato no coincide con `CONTRATO-API.md`, gana el backend: se

@@ -279,8 +279,8 @@ porque desde W6 la web escribe de verdad.
 | Cómo se arranca | Archivo | API | Base |
 |---|---|---|---|
 | `pnpm dev` | `.env.development` | `http://localhost:8080` | la que use el backend local |
-| `pnpm build` / `pnpm preview` | `.env.production` (opcional) | `/api` relativo → el hosting lo reenvía a Render | **Neon, producción** |
-| `pnpm dev:prod` | `.env.production` | `/api` relativo → proxy de Vite (`API_PROXY_TARGET`) → Render | **Neon, producción** |
+| `pnpm build` / `pnpm preview` | `.env.production` (opcional) | `/api` relativo → el hosting lo reenvía a Render | **Supabase, producción** |
+| `pnpm dev:prod` | `.env.production` | `/api` relativo → proxy de Vite (`API_PROXY_TARGET`) → Render | **Supabase, producción** |
 
 **Los `.env` no están en el repo** (desde el 2026-09-24): cada máquina los arma
 copiando `.env.example`, que sí se sube y documenta cada variable. Ninguno tiene
@@ -295,11 +295,11 @@ Del lado del backend (`C:\Users\lucia\IdeaProjects\api`):
 |---|---|---|
 | `local` | `src/main/resources/application-local.properties` | `gym_api_local` — **la de pruebas**, descartable |
 | tests | `src/test/resources/application.properties` | `gimnasio_test` — la suite de integración |
-| sin perfil | `src/main/resources/application.properties` | lo que digan `DB_URL`/`DB_USER`/`DB_PASSWORD` → en Render, Neon |
+| sin perfil | `src/main/resources/application.properties` | lo que digan `DB_URL`/`DB_USER`/`DB_PASSWORD` → en Render, Supabase (Neon hasta el 05/10) |
 
 > **`pnpm dev:prod` escribe en producción.** Antes daba igual, porque la web no
 > tenía una sola escritura; ahora un alta o un cobro hechos desde ahí quedan en
-> Neon. Para probar contra datos de verdad se usa `pnpm dev` con el backend
+> la base de producción. Para probar contra datos de verdad se usa `pnpm dev` con el backend
 > local en perfil `local`.
 
 En el Postgres local hay además una base `Gimnasio_db` a la que no apunta

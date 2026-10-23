@@ -11,10 +11,11 @@ Se actualiza **al terminar cada tramo**, no al final de todo.
 
 - **La web está publicada en https://gimnasioathletics.vercel.app** (Vercel
   Hobby, producción desde `master`), contra el backend en Render y la base en
-  Neon: Vercel solo sirve la web y le reenvía `/api/*` a Render. La sesión
-  de **staff** ya se probó en la URL publicada (8.1, 26/09); falta la del
-  socio y el iPhone. Detalle y dos pendientes del backend en el historial del
-  26/09.
+  **Supabase** (Neon hasta el 05/10, ver `DESPLIEGUE.md` del backend): Vercel
+  solo sirve la web y le reenvía `/api/*` a Render. La sesión de **staff** ya
+  se probó en la URL publicada, en Chrome de PC (26/09) y en un Android
+  (23/10); falta la del socio y el iPhone. Detalle y dos pendientes del
+  backend en el historial del 26/09.
 - **La web está completa para el alcance definido y lista para ser el MVP.**
   El 25/09 se encontró que faltaba el ABM de planes de ADMIN (nunca había
   tenido ticket): se hizo como **W14**, probado en pantalla con ADMIN y con
@@ -58,7 +59,7 @@ y son los que más deuda sacan.
 | 5 | Cobrar, y portal del socio con los días restantes | **hecho** (22/09) — W5 y W10 |
 | 6 | Dashboard de ADMIN | **hecho** (23/09) — gráfico en SVG propio, sin `recharts` |
 | 7 | Tests del interceptor y de los guards | **hecho** (23/09) — `pnpm test`, 31 tests |
-| 8 | Shell de escritorio (repo aparte) | **en curso** — 8.0 hecho: web publicada en Vercel (26/09); 8.2 y 8.3 hechos: instalador apuntando a producción, instalado por el dueño (28/09); 8.1 probado con staff en Chrome (26/09), falta socio e iPhone |
+| 8 | Shell de escritorio (repo aparte) | **en curso** — 8.0 hecho: web publicada en Vercel (26/09); 8.2 y 8.3 hechos: instalador apuntando a producción, instalado por el dueño (28/09); 8.1 probado con staff en Chrome de PC (26/09) y en Android (23/10), falta socio e iPhone |
 
 ## Abierto al 2026-09-28
 
@@ -92,8 +93,9 @@ y son los que más deuda sacan.
     no para que el gimnasio opere con él. Si se cambia de proveedor,
     `vercel.json` se reemplaza por su equivalente de rewrite.
 - **Cold start**: decidido el 25/09, cron externo a `/ping` cada ~10 minutos,
-  directo a Render (no a la web). Lo arma el dueño; `/ping` no toca la base,
-  así que Neon igual se duerme.
+  directo a Render (no a la web). Lo arma el dueño. `/ping` no toca la base:
+  con Supabase da igual, porque la base no se duerme y el pool usa los
+  defaults de Hikari (conexiones abiertas) desde el 05/10.
 - **Push**: lo hace el dueño.
 
 **Siguen abiertos de antes:**
@@ -142,6 +144,24 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-10-23** — **La sesión de staff, probada en un celular** (Xiaomi con
+  Chrome, URL publicada): login, F5 y cerrar y reabrir el navegador mantienen
+  la sesión. Sin cambios de código.
+  - El primer intento se quedó cargando después del login y el F5 volvió al
+    login; al rato anduvo con todo. No se encontró la causa ni en la web ni en
+    la cookie (por el proxy sale `Secure; HttpOnly; SameSite=Lax; Path=/`, o
+    sea que `REFRESH_COOKIE_SAMESITE=Lax` ya está cargada en Render). Lo más
+    probable es lentitud de Render o de Supabase en ese momento; no se
+    confirmó con los logs.
+  - Se sospechó del pool que se vacía al minuto (el de Neon), pero ya se había
+    sacado al pasar a Supabase (backend, `af23453`). No hubo que tocar el
+    backend.
+  - El error `schema "pg_pgrst_no_exposed_schemas" does not exist` que muestra
+    Supabase es la Data API apagada, como pide `DESPLIEGUE.md`: PostgREST
+    apunta a ese esquema inexistente para no publicar ninguno. No es de la app.
+  - Se corrigieron las menciones a Neon que habían quedado en `STACK.md`,
+    `specs/README.md` y esta bitácora.
 
 - **2026-10-05** — **Planes sin leyendas de más.** Se sacó "Es el monto mínimo
   del cobro: el backend rechaza un pago menor" de la tarjeta de cada plan, y la
