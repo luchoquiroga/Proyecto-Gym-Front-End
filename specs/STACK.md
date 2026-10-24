@@ -394,6 +394,16 @@ para el navegador —y para el shell, que carga esa misma URL— el API es del
 mismo sitio. `pnpm dev:prod` reproduce lo mismo con el proxy de Vite
 (`API_PROXY_TARGET`, que no lleva `VITE_` y no va al bundle).
 
+**`vercel.json` también manda los headers de seguridad** (desde el 2026-10-23):
+una `Content-Security-Policy` que solo deja cargar lo del propio sitio más
+Google Fonts, `frame-ancestors 'none'` y `X-Frame-Options: DENY` (nadie puede
+mostrar la web dentro de un iframe), `nosniff`, `Referrer-Policy` y
+`Permissions-Policy`. **Si se agrega algo que se cargue de otro dominio** (una
+fuente, un script, imágenes de un CDN), hay que sumarlo a la CSP o el navegador
+lo bloquea en producción, aunque en `pnpm dev` ande: los headers solo existen
+en Vercel. Tampoco entran `<script>` ni `<style>` en línea: el `style={{...}}`
+de React sí funciona.
+
 Responsabilidad del shell, completa: ventana, ícono, título, auto-update, y que
 cerrar la ventana no mate la sesión. **Cero lógica de negocio, cero llamadas
 propias al API, cero superficie nueva.** Si algún día el shell necesita llamar al

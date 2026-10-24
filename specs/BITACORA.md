@@ -145,6 +145,35 @@ y son los que más deuda sacan.
 
 ## Historial
 
+- **2026-10-23 (segundo tramo)** — **Revisión de seguridad general**, en los
+  dos repos. Lo que salió y cómo quedó:
+  - **Alta, backend: el límite de intentos del login se salteaba** escribiendo
+    la ruta de otra forma (`/usuarios/%6cogin`): medido en producción, después
+    del 429 de `/login` la variante siguió entrando. Arreglado en
+    `RateLimitFilter` (compara la ruta normalizada), con test. Detalle en
+    `DESPLIEGUE.md` §7 del backend. **Falta medirlo en producción después del
+    despliegue.**
+  - **Media, front: la web no mandaba headers de seguridad** (solo HSTS):
+    cualquiera podía mostrarla dentro de un iframe (*clickjacking*) y no había
+    CSP. Ahora los manda `vercel.json` (ver `STACK.md`, después del proxy).
+    Probado con el build servido en local con esos mismos headers: la página,
+    los estilos y la fuente Inter cargan sin violaciones en la consola, y el
+    iframe queda bloqueado. **Falta mirarlo en Vercel** (login, una pantalla
+    de staff y el escritorio, que carga la misma URL).
+  - **Baja, backend: el default de la cookie era `SameSite=None`.** Producción
+    ya tenía `Lax` por variable; ahora `Lax` es también el default del código.
+  - **Baja, front: dependencias.** `zod` 4.6.5 → 4.6.7 y `follow-redirects`
+    (de `axios`) 1.16.0 → 1.16.1. No afectaban a la web en la práctica, pero
+    `pnpm audit --prod` queda sin vulnerabilidades.
+  - **Revisado y bien**: reglas de rol por ruta en el backend, ownership del
+    socio, sin sumideros de XSS en el front, token en RAM, errores sin
+    detalles internos, Swagger y Data API de Supabase apagados.
+  - **Siguen aceptados** (sin cambios): el rate limit agrupa por IP de Vercel,
+    la sesión de una cuenta dada de baja dura hasta 30 minutos, y dos refresh
+    simultáneos dan dos tokens vigentes.
+  - Verificado: backend `mvnw test` (**221**, 0 fallos); front `pnpm build`,
+    `pnpm lint` y `pnpm test` (46) en verde.
+
 - **2026-10-23** — **La sesión de staff, probada en un celular** (Xiaomi con
   Chrome, URL publicada): login, F5 y cerrar y reabrir el navegador mantienen
   la sesión. Sin cambios de código.
