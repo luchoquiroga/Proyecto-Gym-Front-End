@@ -145,6 +145,18 @@ y son los que más deuda sacan.
 
 ## Historial
 
+- **2026-10-24** — **Pantalla vacía después del login en el celular.** En el
+  Android, al iniciar sesión desaparecía el formulario y quedaba solo el fondo
+  (las manchas rojas del `body`); con F5 entraba con la sesión. O sea, React se
+  caía en la transición. Causa más probable: `index.html` decía `lang="en"`,
+  Chrome traducía sola la página al español, y React se cae cuando el traductor
+  le cambia los nodos de texto (el botón "Iniciar sesión" → "Ingresando..." y el
+  cambio de pantalla). Seguramente es también el "se quedó cargando" del 23/10.
+  Ahora es `lang="es" translate="no"` + `<meta name="google" content="notranslate">`.
+  `pnpm build` y `pnpm lint` en verde. **Falta que el dueño lo pruebe en el
+  celular** después del deploy. Queda como idea (no hecho): un error boundary,
+  para que una caída muestre un error en vez de una pantalla vacía.
+
 - **2026-10-23 (segundo tramo)** — **Revisión de seguridad general**, en los
   dos repos. Lo que salió y cómo quedó:
   - **Alta, backend: el límite de intentos del login se salteaba** escribiendo
