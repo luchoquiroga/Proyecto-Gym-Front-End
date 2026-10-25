@@ -153,9 +153,30 @@ y son los que más deuda sacan.
   le cambia los nodos de texto (el botón "Iniciar sesión" → "Ingresando..." y el
   cambio de pantalla). Seguramente es también el "se quedó cargando" del 23/10.
   Ahora es `lang="es" translate="no"` + `<meta name="google" content="notranslate">`.
-  `pnpm build` y `pnpm lint` en verde. **Falta que el dueño lo pruebe en el
-  celular** después del deploy. Queda como idea (no hecho): un error boundary,
-  para que una caída muestre un error en vez de una pantalla vacía.
+  `pnpm build` y `pnpm lint` en verde. **Probado por el dueño en el celular**
+  el mismo día: el login entra directo, sin refrescar.
+
+- **2026-10-24 (segundo tramo)** — **Aviso de caída y seguridad de la base.**
+  - **Front**: `components/estado/ErrorDeLaApp.tsx` envuelve la app en
+    `main.tsx`. Si React se cae al dibujar, se ve "Algo falló en la pantalla"
+    con un botón de recargar, en vez del fondo vacío. Es la **única clase** de
+    la web, como excepción a `AGENTS.md` §6 decidida por el dueño (React no
+    deja atrapar errores de render con hooks), en vez de sumar
+    `react-error-boundary`. `pnpm test`: 48.
+  - **Backend, `V8__rls_y_checks.sql`**: RLS activo sin políticas en las seis
+    tablas (red por si se prende la Data API de Supabase; la app es dueña de
+    las tablas y no se entera) y `CHECK` de plata, duración, fechas y
+    anulación completa. Quién ve qué lo sigue decidiendo el backend: se revisó
+    y un socio solo llega a su propia ficha y a los planes. `mvnw test`: 221.
+  - `gimnasio_test` tenía aplicada una V8 "índices rendimiento y limpieza"
+    (18/10) sin archivo en ningún lado ni mención en specs: se trató como
+    prueba descartada (decisión del dueño), se borró su fila de Flyway y sus 7
+    índices.
+  - **Antes de desplegar la V8**, correr en el SQL editor de Supabase las dos
+    consultas del comentario de la migración: si alguna devuelve filas, la
+    migración falla y Render no arranca.
+  - **Quedan del plan del 24/10**: plata en `NUMERIC`/`BigDecimal` (V9, aparte),
+    usuario de base con permisos mínimos y limpieza de refresh tokens.
 
 - **2026-10-23 (segundo tramo)** — **Revisión de seguridad general**, en los
   dos repos. Lo que salió y cómo quedó:
