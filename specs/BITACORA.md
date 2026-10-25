@@ -172,11 +172,36 @@ y son los que más deuda sacan.
     (18/10) sin archivo en ningún lado ni mención en specs: se trató como
     prueba descartada (decisión del dueño), se borró su fila de Flyway y sus 7
     índices.
-  - **Antes de desplegar la V8**, correr en el SQL editor de Supabase las dos
-    consultas del comentario de la migración: si alguna devuelve filas, la
-    migración falla y Render no arranca.
-  - **Quedan del plan del 24/10**: plata en `NUMERIC`/`BigDecimal` (V9, aparte),
-    usuario de base con permisos mínimos y limpieza de refresh tokens.
+  - Las dos consultas del comentario de la migración, corridas por el dueño
+    en el SQL editor de Supabase el 24/10, **no trajeron filas**: la V8 se
+    puede aplicar en producción. Falta desplegarla (merge a `master`) y ver
+    que Render arranque.
+
+- **2026-10-24 (tercer tramo)** — **Plata exacta y limpieza de tokens** (fases 3
+  y 4a del plan del 24/10).
+  - **Backend, `V9__plata_exacta_e_indice_de_tokens.sql`**: `precio` y
+    `monto_abonado` pasan de `DOUBLE PRECISION` a `NUMERIC(12,2)`, y en Java de
+    `Double` a `BigDecimal` (`models/Plata.java` explica las dos trampas:
+    comparar con `compareTo`, nunca `equals`, y normalizar la escala antes de
+    responder). Los DTO de entrada rechazan más de dos decimales (`@Digits`).
+  - **Limpieza diaria de refresh tokens** (`LimpiezaRefreshTokensService`, a
+    las 03:00): borra los de los dos portales vencidos hace más de 7 días, con
+    índice por `expiracion` en la misma V9. Cierra el gap de `AUTHZ-MATRIX.md`.
+  - **Front**: los formularios de cobro y de plan piden lo mismo que el backend
+    (`multipleOf(0.01)`). `CONTRATO-API.md` dice que los montos salen siempre
+    con dos decimales.
+  - Verificado: `mvnw test` **222** (uno nuevo, el de la limpieza contra la base
+    real); `pnpm build`, `pnpm lint` y `pnpm test` (48) en verde.
+    `gym_api_local` no tiene montos con más de dos decimales.
+  - Las dos consultas del comentario de la V9 (montos con más de dos
+    decimales), corridas por el dueño en Supabase el 24/10, **no trajeron
+    filas**: la V9 se puede aplicar en producción.
+  - **4b, que había quedado afuera de este tramo**: un usuario de base con permisos
+    mínimos. Con un usuario que no sea dueño de las tablas, el RLS de la V8 lo
+    deja sin filas y habría que escribir políticas que copian las reglas de
+    Java; además Flyway necesitaría otro usuario y dos variables más en Render.
+    El riesgo que cubre (inyección SQL) no tiene una puerta abierta hoy (JPA
+    con parámetros). Se retoma junto con lo de "subirlo posta".
 
 - **2026-10-23 (segundo tramo)** — **Revisión de seguridad general**, en los
   dos repos. Lo que salió y cómo quedó:

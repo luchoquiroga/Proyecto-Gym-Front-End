@@ -21,6 +21,8 @@ export const planSchema = z.object({
   precio: z
     .number({ error: 'El precio es obligatorio' })
     .positive('El precio debe ser mayor a cero')
+    // Igual que el backend (@Digits en PlanRequest): la base guarda centavos, no más.
+    .multipleOf(0.01, 'El precio admite hasta dos decimales')
     .max(PRECIO_MAXIMO, 'El precio no puede superar los 1.000.000.000'),
   duracion: z
     .number({ error: 'La duración es obligatoria' })

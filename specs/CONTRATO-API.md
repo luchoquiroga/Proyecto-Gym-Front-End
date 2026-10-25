@@ -239,7 +239,7 @@ Cosas que hay que saber sí o sí para las pantallas de socios:
 { "clienteId": 4, "planId": 2, "montoAbonado": 15000, "fechaPago": "2026-09-18" }
 
 // PagoResponse
-{ "id": 31, "montoAbonado": 15000, "fechaPago": "2026-09-18",
+{ "id": 31, "montoAbonado": 15000.00, "fechaPago": "2026-09-18",
   "fechaVencimiento": "2026-10-18",
   "cliente": { "id": 4, "nombre": "Ana", "apellido": "Pérez", "documento": "12345678" },
   "plan": { "id": 2, "nombre": "Mensual" },
@@ -256,6 +256,11 @@ Reglas del backend que la UI tiene que respetar:
 - **`montoAbonado` es opcional**: si no va, el backend cobra el precio del plan.
   Tope: **1.000.000.000** (desde el 25/09; un `1e400` llegaba como Infinity y
   rompía la caja del mes).
+- **Plata con dos decimales, como máximo** (desde el 24/10, V9 del backend):
+  `montoAbonado` y `precio` con más decimales → 400 en `errores`, y en las
+  respuestas los montos y `totalGanancias` salen **siempre con dos decimales**
+  (`15000.00`). Para el front es el mismo `number`; el backend usa `BigDecimal`
+  y la base `NUMERIC(12,2)`, que son exactos.
 - **`fechaPago` no puede ser futura → 400** "La fecha de cobro no puede ser
   posterior a hoy." (desde el 25/09; antes activaba al socio y sumaba en la caja
   de un día que no pasó). "Hoy" es el del `Clock` de Argentina.
@@ -296,7 +301,7 @@ Reglas del backend que la UI tiene que respetar:
 
 ```jsonc
 // PlanRequest / PlanResponse — duracion en DÍAS, define el vencimiento del pago
-{ "id": 2, "nombre": "Mensual", "precio": 15000, "duracion": 30 }
+{ "id": 2, "nombre": "Mensual", "precio": 15000.00, "duracion": 30 }
 ```
 
 Validación (desde el 25/09): `nombre` obligatorio y de hasta 100 caracteres,
@@ -346,7 +351,7 @@ con mensaje). Son mensajes para mostrar, no casos a prevenir adivinando.
 `GET /dashboard/ganancias-mensuales?anio=&mes=` (sin params = mes en curso):
 
 ```jsonc
-{ "anio": 2026, "mes": 9, "totalGanancias": 485000, "cantidadPagos": 32 }
+{ "anio": 2026, "mes": 9, "totalGanancias": 485000.00, "cantidadPagos": 32 }
 ```
 
 Es un **agregado de un mes**. El desglose del mes (los pagos uno por uno, como
