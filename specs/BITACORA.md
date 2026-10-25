@@ -172,11 +172,62 @@ y son los que más deuda sacan.
     (18/10) sin archivo en ningún lado ni mención en specs: se trató como
     prueba descartada (decisión del dueño), se borró su fila de Flyway y sus 7
     índices.
-  - **Antes de desplegar la V8**, correr en el SQL editor de Supabase las dos
-    consultas del comentario de la migración: si alguna devuelve filas, la
-    migración falla y Render no arranca.
-  - **Quedan del plan del 24/10**: plata en `NUMERIC`/`BigDecimal` (V9, aparte),
-    usuario de base con permisos mínimos y limpieza de refresh tokens.
+  - Las dos consultas del comentario de la migración, corridas por el dueño
+    en el SQL editor de Supabase el 24/10, **no trajeron filas**: la V8 se
+    puede aplicar en producción. Falta desplegarla (merge a `master`) y ver
+    que Render arranque.
+
+- **2026-10-24 (tercer tramo)** — **Plata exacta y limpieza de tokens** (fases 3
+  y 4a del plan del 24/10).
+  - **Backend, `V9__plata_exacta_e_indice_de_tokens.sql`**: `precio` y
+    `monto_abonado` pasan de `DOUBLE PRECISION` a `NUMERIC(12,2)`, y en Java de
+    `Double` a `BigDecimal` (`models/Plata.java` explica las dos trampas:
+    comparar con `compareTo`, nunca `equals`, y normalizar la escala antes de
+    responder). Los DTO de entrada rechazan más de dos decimales (`@Digits`).
+  - **Limpieza diaria de refresh tokens** (`LimpiezaRefreshTokensService`, a
+    las 03:00): borra los de los dos portales vencidos hace más de 7 días, con
+    índice por `expiracion` en la misma V9. Cierra el gap de `AUTHZ-MATRIX.md`.
+  - **Front**: los formularios de cobro y de plan piden lo mismo que el backend
+    (`multipleOf(0.01)`). `CONTRATO-API.md` dice que los montos salen siempre
+    con dos decimales.
+  - Verificado: `mvnw test` **222** (uno nuevo, el de la limpieza contra la base
+    real); `pnpm build`, `pnpm lint` y `pnpm test` (48) en verde.
+    `gym_api_local` no tiene montos con más de dos decimales.
+  - Las dos consultas del comentario de la V9 (montos con más de dos
+    decimales), corridas por el dueño en Supabase el 24/10, **no trajeron
+    filas**: la V9 se puede aplicar en producción.
+  - **4b, que había quedado afuera de este tramo** (hecha después, ver el
+    cuarto tramo; el análisis de abajo sobreestimaba el costo): un usuario de base con permisos
+    mínimos. Con un usuario que no sea dueño de las tablas, el RLS de la V8 lo
+    deja sin filas y habría que escribir políticas que copian las reglas de
+    Java; además Flyway necesitaría otro usuario y dos variables más en Render.
+    El riesgo que cubre (inyección SQL) no tiene una puerta abierta hoy (JPA
+    con parámetros). Se retoma junto con lo de "subirlo posta".
+
+- **2026-10-24 (cuarto tramo)** — **La app ya no entra a la base como dueña** (4b).
+  - Al revisarlo de cerca la cuenta cambió: la app solo borra planes y refresh
+    tokens, así que un usuario sin `DELETE` en `pagos`, `clientes` y `usuarios`
+    hace que la base imponga "un pago no se borra, se anula" y las bajas
+    lógicas. Y no hacen falta políticas de RLS: alcanza con `BYPASSRLS`, que el
+    `postgres` de Supabase puede dar (lo confirmó el dueño con `pg_roles`).
+  - **Backend, `V10__usuario_de_la_app_con_permisos_minimos.sql`**:
+    `gimnasio_runtime` con `SELECT/INSERT/UPDATE` en todo y `DELETE` solo en
+    planes y tokens; `ALTER DEFAULT PRIVILEGES` para las tablas futuras; y en
+    Supabase les saca todos los permisos a `anon` y `authenticated`. Flyway
+    migra con el dueño (`spring.flyway.user`, variables `DB_MIGRATION_*`).
+  - **`PermisosDeLaBaseIntegrationTest`**: revisa los permisos de todas las
+    tablas y se conecta como `gimnasio_runtime` para confirmar que no puede
+    borrar pagos, socios ni cuentas, ni hacer `TRUNCATE`, `DROP` o `ALTER`. La
+    suite sigue corriendo como dueño, porque `ConcurrenciaIntegrationTest`
+    limpia con `DELETE`. `mvnw test`: **224**.
+  - **Local**: se creó `gimnasio_runtime` en el Postgres de la PC (contraseña
+    `gimnasio_runtime_dev`, de desarrollo). `application-local.properties`, que
+    no está en git, ya usa los dos usuarios. Probado: `gym_api_local` migró a
+    la V10 como `gimnasio_app` y las 10 conexiones de la app son de
+    `gimnasio_runtime`.
+  - **Para producción**: seguir `DESPLIEGUE.md` §3 del backend, "Pasar a la
+    V10 una base que ya está andando". Hay que **crear el usuario en Supabase
+    antes del merge**: sin él, la V10 falla y Render no arranca.
 
 - **2026-10-23 (segundo tramo)** — **Revisión de seguridad general**, en los
   dos repos. Lo que salió y cómo quedó:

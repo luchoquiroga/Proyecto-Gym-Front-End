@@ -23,6 +23,8 @@ export const crearCobroSchema = (planes: Plan[]) =>
       montoAbonado: z
         .number({ error: 'El importe es obligatorio' })
         .positive('El importe debe ser mayor a cero')
+        // Igual que el backend (@Digits en PagoRequest): la base guarda centavos, no más.
+        .multipleOf(0.01, 'El importe admite hasta dos decimales')
         .max(MONTO_MAXIMO, 'El monto abonado no puede superar los 1.000.000.000'),
       // Es el día en que entró la plata: no puede ser futura. "Hoy" es el del
       // navegador, que en el gimnasio es la misma zona que el `Clock` del backend.
