@@ -238,7 +238,9 @@ y son los que más deuda sacan.
   - **Confirmado en producción**: `pg_stat_activity` muestra las 10
     conexiones del pool como `gimnasio_runtime` (las de `postgres`,
     `authenticator`, `pgbouncer` y `supabase_admin` son de Supabase).
-    **Falta**: un cobro con su anulación desde la web.
+    **Probado en producción** (2026-10-25): cobro y anulación desde la web y el celular,
+    y recorrida de dashboard, pagos, planes y socios con renovación de sesión, sin
+    errores en el API ni en la consola.
 
 - **2026-10-23 (segundo tramo)** — **Revisión de seguridad general**, en los
   dos repos. Lo que salió y cómo quedó:
