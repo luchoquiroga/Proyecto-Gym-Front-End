@@ -196,12 +196,38 @@ y son los que más deuda sacan.
   - Las dos consultas del comentario de la V9 (montos con más de dos
     decimales), corridas por el dueño en Supabase el 24/10, **no trajeron
     filas**: la V9 se puede aplicar en producción.
-  - **4b, que había quedado afuera de este tramo**: un usuario de base con permisos
+  - **4b, que había quedado afuera de este tramo** (hecha después, ver el
+    cuarto tramo; el análisis de abajo sobreestimaba el costo): un usuario de base con permisos
     mínimos. Con un usuario que no sea dueño de las tablas, el RLS de la V8 lo
     deja sin filas y habría que escribir políticas que copian las reglas de
     Java; además Flyway necesitaría otro usuario y dos variables más en Render.
     El riesgo que cubre (inyección SQL) no tiene una puerta abierta hoy (JPA
     con parámetros). Se retoma junto con lo de "subirlo posta".
+
+- **2026-10-24 (cuarto tramo)** — **La app ya no entra a la base como dueña** (4b).
+  - Al revisarlo de cerca la cuenta cambió: la app solo borra planes y refresh
+    tokens, así que un usuario sin `DELETE` en `pagos`, `clientes` y `usuarios`
+    hace que la base imponga "un pago no se borra, se anula" y las bajas
+    lógicas. Y no hacen falta políticas de RLS: alcanza con `BYPASSRLS`, que el
+    `postgres` de Supabase puede dar (lo confirmó el dueño con `pg_roles`).
+  - **Backend, `V10__usuario_de_la_app_con_permisos_minimos.sql`**:
+    `gimnasio_runtime` con `SELECT/INSERT/UPDATE` en todo y `DELETE` solo en
+    planes y tokens; `ALTER DEFAULT PRIVILEGES` para las tablas futuras; y en
+    Supabase les saca todos los permisos a `anon` y `authenticated`. Flyway
+    migra con el dueño (`spring.flyway.user`, variables `DB_MIGRATION_*`).
+  - **`PermisosDeLaBaseIntegrationTest`**: revisa los permisos de todas las
+    tablas y se conecta como `gimnasio_runtime` para confirmar que no puede
+    borrar pagos, socios ni cuentas, ni hacer `TRUNCATE`, `DROP` o `ALTER`. La
+    suite sigue corriendo como dueño, porque `ConcurrenciaIntegrationTest`
+    limpia con `DELETE`. `mvnw test`: **224**.
+  - **Local**: se creó `gimnasio_runtime` en el Postgres de la PC (contraseña
+    `gimnasio_runtime_dev`, de desarrollo). `application-local.properties`, que
+    no está en git, ya usa los dos usuarios. Probado: `gym_api_local` migró a
+    la V10 como `gimnasio_app` y las 10 conexiones de la app son de
+    `gimnasio_runtime`.
+  - **Para producción**: seguir `DESPLIEGUE.md` §3 del backend, "Pasar a la
+    V10 una base que ya está andando". Hay que **crear el usuario en Supabase
+    antes del merge**: sin él, la V10 falla y Render no arranca.
 
 - **2026-10-23 (segundo tramo)** — **Revisión de seguridad general**, en los
   dos repos. Lo que salió y cómo quedó:
