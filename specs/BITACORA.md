@@ -228,6 +228,17 @@ y son los que más deuda sacan.
   - **Para producción**: seguir `DESPLIEGUE.md` §3 del backend, "Pasar a la
     V10 una base que ya está andando". Hay que **crear el usuario en Supabase
     antes del merge**: sin él, la V10 falla y Render no arranca.
+  - **Desplegado el 24/10, con un tropiezo.** El Render de producción no usa
+    `DB_USER`/`DB_PASSWORD` sino `SPRING_DATASOURCE_USERNAME`/`PASSWORD` (los
+    documentos decían otra cosa; corregido en `DESPLIEGUE.md`). Los primeros
+    deploys fallaron con `permission denied for table flyway_schema_history`:
+    `DB_MIGRATION_*` no tenían los datos de `postgres`, así que Flyway entraba
+    como `gimnasio_runtime`. Con el dueño en `DB_MIGRATION_*` arrancó. El txt
+    con credenciales que había en la PC era de Neon, no de Supabase.
+  - **Confirmado en producción**: `pg_stat_activity` muestra las 10
+    conexiones del pool como `gimnasio_runtime` (las de `postgres`,
+    `authenticator`, `pgbouncer` y `supabase_admin` son de Supabase).
+    **Falta**: un cobro con su anulación desde la web.
 
 - **2026-10-23 (segundo tramo)** — **Revisión de seguridad general**, en los
   dos repos. Lo que salió y cómo quedó:
