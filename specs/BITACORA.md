@@ -145,6 +145,14 @@ y son los que más deuda sacan.
 
 ## Historial
 
+- **2026-11-05** — **`follow-redirects` 1.16.2 por CVE-2026-116689.** Snyk la
+  marcó alta (8.2; GitHub le da 5.9) con "Fixable issues 0" porque llega por
+  `axios`, cuyo rango `^1.16.0` ya aceptaba el arreglo: solo cambia
+  `pnpm-lock.yaml`, con `pnpm update follow-redirects -r --depth Infinity`. **No
+  afectaba a la web publicada**: en el navegador `axios` no usa el adaptador
+  `http`, y ni `follow-redirects` ni `sensitiveHeaders` aparecen en el bundle
+  (tampoco en `src`). `pnpm build`, `pnpm test` (48 de 48) y `pnpm lint` en verde.
+
 - **2026-10-24** — **Pantalla vacía después del login en el celular.** En el
   Android, al iniciar sesión desaparecía el formulario y quedaba solo el fondo
   (las manchas rojas del `body`); con F5 entraba con la sesión. O sea, React se
