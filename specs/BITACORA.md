@@ -98,6 +98,37 @@ y son los que más deuda sacan.
   defaults de Hikari (conexiones abiertas) desde el 05/10.
 - **Push**: lo hace el dueño.
 
+**Datos de demo en PRODUCCIÓN (cargados el 2026-10-26, para la demo del 27/10):**
+
+- El 26/10 el dueño **vació socios y pagos** de producción desde el editor SQL
+  de Supabase (el `TRUNCATE` de abajo). Se fueron también los 4 socios que
+  había, con su acuerdo. **Usuarios y
+  planes no se tocaron**: verificado después por el API (las 4 cuentas de staff y los dos planes).
+- Después se recargó la demo por el API, con la cuenta `admin` desde la web
+  publicada: **toda la base es demo**. 24 socios con documento
+  `DEMO0001`…`DEMO0024` (ids 1 a 24) y 114 cobros retroactivos de mayo a
+  octubre, 2 de ellos anulados.
+- Quedaron 17 ACTIVO (dos vencen el 27 y 28/10), 5 INACTIVO (cuatro dejaron
+  de venir y un pase diario vencido) y 2 MOROSO. Un cobro no deja moroso a
+  nadie (solo activa si vence después de hoy), así que los dos morosos
+  (`DEMO0023` y `DEMO0024`) se armaron con un mensual que venció el 24 y el
+  23/10, un pase diario de hoy que los activó, y la **anulación** de ese pase
+  ("Cobro cargado por error"): el recálculo los dejó MOROSO. Pasan solos a
+  INACTIVO a los 5 días del vencimiento (28 y 29/10).
+- **Hay que borrarlos antes de que el gimnasio opere**, con el mismo SQL que
+  ya se probó (no hay endpoint; editor SQL de Supabase, como `postgres`). No
+  borra `usuarios` ni `planes`: un `TRUNCATE` solo arrastra las tablas que
+  apuntan a las que se vacían, y acá ni siquiera lleva `CASCADE`, así que si
+  aparece otra tabla que dependa de `clientes` falla en vez de borrarla en
+  silencio:
+
+  ```sql
+  BEGIN;
+  TRUNCATE clientes, pagos, cliente_refresh_tokens RESTART IDENTITY;
+  -- usuarios y planes tienen que dar lo mismo que antes; clientes y pagos, 0
+  COMMIT;
+  ```
+
 **Siguen abiertos de antes:**
 
 - **Datos de prueba en `gym_api_local`** (base descartable), dejados a
@@ -144,6 +175,26 @@ y son los que más deuda sacan.
   No hay endpoint para recuperarlo.
 
 ## Historial
+
+- **2026-11-05** — **Dependencias de desarrollo sin vulnerabilidades conocidas.**
+  `pnpm audit` marcaba 19 (7 altas, 11 moderadas, 1 baja) en `undici`, `vite`,
+  `@vitest/mocker`, `source-map-js` y `postcss-selector-parser`; `--prod` ya daba
+  0, así que no llegaban a las dependencias de producción. Suben `vite` 8.3.5,
+  `vitest` 5.1.0 y `jsdom` 30.1.3, y por el lockfile `undici` 8.12.3,
+  `source-map-js` 1.2.2 y `postcss-selector-parser` 6.1.5. **Vite genera el bundle
+  publicado**, así que esto sí cambia lo que se despliega, aunque no sea una
+  dependencia de producción. Los saltos de versión mayor (`tailwindcss` 4,
+  `typescript` 7, `msw` 3, `@hookform/resolvers` 7) quedan afuera: no arreglan
+  nada del audit. `pnpm audit`: 0. `pnpm build`, `pnpm test` (48 de 48) y
+  `pnpm lint` en verde.
+
+- **2026-11-05** — **`follow-redirects` 1.16.2 por CVE-2026-116689.** Snyk la
+  marcó alta (8.2; GitHub le da 5.9) con "Fixable issues 0" porque llega por
+  `axios`, cuyo rango `^1.16.0` ya aceptaba el arreglo: solo cambia
+  `pnpm-lock.yaml`, con `pnpm update follow-redirects -r --depth Infinity`. **No
+  afectaba a la web publicada**: en el navegador `axios` no usa el adaptador
+  `http`, y ni `follow-redirects` ni `sensitiveHeaders` aparecen en el bundle
+  (tampoco en `src`). `pnpm build`, `pnpm test` (48 de 48) y `pnpm lint` en verde.
 
 - **2026-10-24** — **Pantalla vacía después del login en el celular.** En el
   Android, al iniciar sesión desaparecía el formulario y quedaba solo el fondo
