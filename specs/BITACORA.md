@@ -176,6 +176,18 @@ y son los que más deuda sacan.
 
 ## Historial
 
+- **2026-11-05** — **Dependencias de desarrollo sin vulnerabilidades conocidas.**
+  `pnpm audit` marcaba 19 (7 altas, 11 moderadas, 1 baja) en `undici`, `vite`,
+  `@vitest/mocker`, `source-map-js` y `postcss-selector-parser`; `--prod` ya daba
+  0, así que no llegaban a las dependencias de producción. Suben `vite` 8.3.5,
+  `vitest` 5.1.0 y `jsdom` 30.1.3, y por el lockfile `undici` 8.12.3,
+  `source-map-js` 1.2.2 y `postcss-selector-parser` 6.1.5. **Vite genera el bundle
+  publicado**, así que esto sí cambia lo que se despliega, aunque no sea una
+  dependencia de producción. Los saltos de versión mayor (`tailwindcss` 4,
+  `typescript` 7, `msw` 3, `@hookform/resolvers` 7) quedan afuera: no arreglan
+  nada del audit. `pnpm audit`: 0. `pnpm build`, `pnpm test` (48 de 48) y
+  `pnpm lint` en verde.
+
 - **2026-11-05** — **`follow-redirects` 1.16.2 por CVE-2026-116689.** Snyk la
   marcó alta (8.2; GitHub le da 5.9) con "Fixable issues 0" porque llega por
   `axios`, cuyo rango `^1.16.0` ya aceptaba el arreglo: solo cambia
