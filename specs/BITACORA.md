@@ -176,6 +176,15 @@ y son los que más deuda sacan.
 
 ## Historial
 
+- **2026-11-23** — **Corte inmediato de sesiones de staff (backend `6abc301` y
+  `eb794e9`, en `RamaLuciano`, sin mergear).** La baja, el reset y el cambio de
+  la propia contraseña ahora invalidan en el acto el access token de esa cuenta
+  (antes duraba hasta 30 min), y reactivar no revive los tokens viejos. **El
+  front no necesitó cambios de código:** `CambiarContrasena` ya cerraba la
+  sesión y mandaba al login con aviso, y a la cuenta dada de baja o reseteada
+  la saca el interceptor con `AvisoSesionCerrada`. Solo se actualizaron el
+  comentario de `CambiarContrasena.tsx` y `CONTRATO-API.md` §3 (Staff).
+
 - **2026-11-05** — **Dependencias de desarrollo sin vulnerabilidades conocidas.**
   `pnpm audit` marcaba 19 (7 altas, 11 moderadas, 1 baja) en `undici`, `vite`,
   `@vitest/mocker`, `source-map-js` y `postcss-selector-parser`; `--prod` ya daba
