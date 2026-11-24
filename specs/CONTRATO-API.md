@@ -343,6 +343,13 @@ de crear una nueva" si no (el nombre sigue ocupado). La baja **y el reset**
 revocan las sesiones de esa cuenta; reactivar no cambia la contraseña. El reset
 funciona también sobre una cuenta dada de baja. Verificado el 23/09.
 
+**Desde el 23/11 el corte es inmediato** (backend V11/V12). La baja, el reset y
+el cambio de la propia contraseña invalidan también el **access token** que la
+cuenta ya tenía: el próximo request con él da 401. Hasta ese día seguía sirviendo
+hasta 30 minutos. Reactivar no revive los tokens anteriores a la baja: hay que
+volver a loguearse. Un login hecho en el mismo segundo del corte también se
+rechaza, porque `iat` va en segundos; en la práctica no pasa.
+
 El backend rechaza auto-darse de baja y dar de baja al último ADMIN activo (400
 con mensaje). Son mensajes para mostrar, no casos a prevenir adivinando.
 

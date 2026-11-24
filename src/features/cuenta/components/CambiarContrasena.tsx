@@ -25,10 +25,10 @@ export interface AvisoDeLogin {
 /**
  * Cambiar la propia contraseña. ADMIN y GERENCIA.
  *
- * Al cambiarla, el backend revoca todas las sesiones de la cuenta: el access
- * token actual sigue sirviendo hasta 30 minutos, pero el próximo refresh va a
- * fallar. En vez de esperar a que el interceptor lo descubra y te saque en medio
- * de un cobro, se cierra la sesión acá y se manda al login con un aviso claro.
+ * Al cambiarla, el backend corta todas las sesiones de la cuenta en el acto: el
+ * access token actual ya no sirve y el refresh tampoco (V12 del backend). En vez
+ * de esperar a que el próximo request dé 401 y el interceptor te saque con un
+ * aviso genérico, se cierra la sesión acá y se manda al login con un aviso claro.
  */
 export const CambiarContrasena = ({ onCerrar }: { onCerrar: () => void }) => {
   const [mensajeServidor, setMensajeServidor] = useState<string | null>(null);
